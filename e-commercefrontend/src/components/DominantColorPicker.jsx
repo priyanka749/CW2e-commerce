@@ -11,7 +11,7 @@ const product = {
   },
 };
 
-const IMAGE_BASE_URL = "http://localhost:3000/uploads/";
+const IMAGE_BASE_URL = "https://localhost:3000/uploads/";
 
 export default function ColorImageSwitcher() {
   const [selectedColor, setSelectedColor] = useState(product.colors[0]);

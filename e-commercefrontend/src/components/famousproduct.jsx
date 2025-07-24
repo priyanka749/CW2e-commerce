@@ -42,7 +42,7 @@
 //   const fetchProducts = async () => {
 //     try {
 //       setLoading(true);
-//       const res = await fetch('http://localhost:3000/api/products');
+//       const res = await fetch('httpss://localhost:3000/api/products');
 //       const data = await res.json();
 
 //       if (Array.isArray(data)) {
@@ -79,7 +79,7 @@
 //     }
 
 //     try {
-//       const res = await fetch('http://localhost:3000/api/cart/add', {
+//       const res = await fetch('https://localhost:3000/api/cart/add', {
 //         method: 'POST',
 //         headers: {
 //           'Content-Type': 'application/json',
@@ -102,7 +102,7 @@
 //           autoClose: 2500,
 //         });
 
-//         const res2 = await fetch('http://localhost:3000/api/cart', {
+//         const res2 = await fetch('https://localhost:3000/api/cart', {
 //           headers: { Authorization: `Bearer ${token}` },
 //         });
 //         const cartData = await res2.json();
@@ -154,7 +154,7 @@
 //   onClick={() => navigate(`/product/${product._id}`)}
 // >
 //   <img
-//     src={`http://localhost:3000/uploads/${product.image}`}
+//     src={`https://localhost:3000/uploads/${product.image}`}
 //     alt={product.title}
 //     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
 //   />
@@ -269,7 +269,7 @@ const FamousProducts = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const res = await fetch('http://localhost:3000/api/products');
+      const res = await fetch('https://localhost:3000/api/products');
       const data = await res.json();
 
       if (Array.isArray(data)) {
@@ -290,7 +290,7 @@ const FamousProducts = () => {
 
   const fetchFavorites = async () => {
     try {
-      const res = await fetch(`http://localhost:3000/api/users/favorites`, {
+      const res = await fetch(`https://localhost:3000/api/users/favorites`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -309,8 +309,8 @@ const FamousProducts = () => {
     }
 
     const url = isFav
-      ? 'http://localhost:3000/api/favorites/remove'
-      : 'http://localhost:3000/api/favorites/add';
+      ? 'https://localhost:3000/api/favorites/remove'
+      : 'https://localhost:3000/api/favorites/add';
 
     const res = await fetch(url, {
       method: 'POST',
@@ -358,7 +358,7 @@ const FamousProducts = () => {
     }
 
     try {
-      const res = await fetch('http://localhost:3000/api/cart/add', {
+      const res = await fetch('https://localhost:3000/api/cart/add', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -381,7 +381,7 @@ const FamousProducts = () => {
           autoClose: 2500,
         });
 
-        const res2 = await fetch('http://localhost:3000/api/cart', {
+        const res2 = await fetch('https://localhost:3000/api/cart', {
           headers: { Authorization: `Bearer ${token}` },
         });
         const cartData = await res2.json();
@@ -440,7 +440,7 @@ const FamousProducts = () => {
               onClick={() => navigate(`/product/${product._id}`)}
             >
               <img
-                src={`http://localhost:3000/uploads/${product.image}`}
+                src={`https://localhost:3000/uploads/${product.image}`}
                 alt={product.title}
                 className="w-full h-full object-cover rounded-t-3xl group-hover:scale-110 group-hover:brightness-105 transition-transform duration-300 border-b-2 border-[#e2c799]/30"
               />
