@@ -28,7 +28,7 @@
 //     // Fetch products for featured deals
 //     const fetchProducts = async () => {
 //       try {
-//         const res = await fetch('http://localhost:3000/api/products');
+//         const res = await fetch('https://localhost:3000/api/products');
 //         const data = await res.json();
 //         setProducts(data.slice(0, 8)); // Show only first 8 as featured
 //       } catch (err) {
@@ -91,7 +91,7 @@
 //                 </div>
 //                 <div className="relative w-full h-[380px] overflow-hidden cursor-pointer flex items-center justify-center" onClick={() => navigate(`/product/${product._id}`)}>
 //                   <img
-//                     src={`http://localhost:3000/uploads/${product.image}`}
+//                     src={`https://localhost:3000/uploads/${product.image}`}
 //                     alt={product.title}
 //                     className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
 //                   />
@@ -156,7 +156,7 @@ const Sales = () => {
   useEffect(() => {
     const fetchSales = async () => {
       try {
-        const res = await fetch('http://localhost:3000/api/sales');
+        const res = await fetch('https://localhost:3000/api/sales');
         const data = await res.json();
         setProducts(data);
       } catch (err) {
@@ -240,7 +240,7 @@ const Sales = () => {
                   onClick={() => navigate(`/product/${product._id}`)}
                 >
                   <img
-                    src={`http://localhost:3000/uploads/${product.image}`}
+                    src={`https://localhost:3000/uploads/${product.image}`}
                     alt={product.title}
                     className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
                   />

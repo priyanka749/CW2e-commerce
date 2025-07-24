@@ -46,11 +46,11 @@ const ProductDetail = () => {
     const fetchProduct = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`http://localhost:3000/api/products/${id}`);
+        const res = await fetch(`https://localhost:3000/api/products/${id}`);
         if (!res.ok) throw new Error('Failed to fetch product');
         const data = await res.json();
         setProduct(data);
-        setSelectedImage(`http://localhost:3000/uploads/${data.image}`);
+        setSelectedImage(`https://localhost:3000/uploads/${data.image}`);
         setSelectedColor(data.colors?.[0] || '');
         setSelectedSize(data.sizes?.[0]?.size || '');
       } catch (err) {
@@ -62,7 +62,7 @@ const ProductDetail = () => {
 
     const fetchReviews = async () => {
       try {
-         const res = await fetch(`http://localhost:3000/api/products/${id}`);
+         const res = await fetch(`https://localhost:3000/api/products/${id}`);
         const data = await res.json();
         setAllReviews(data.reviews || data); // Adjusted to handle response structure
       } catch {
@@ -72,7 +72,7 @@ const ProductDetail = () => {
 
     const fetchRelatedProducts = async () => {
       try {
-        const res = await fetch('http://localhost:3000/api/products');
+        const res = await fetch('https://localhost:3000/api/products');
         const data = await res.json();
         if (Array.isArray(data)) {
           setRelatedProducts(data.filter(p => p._id !== id).slice(0, 4));
@@ -105,7 +105,7 @@ const ProductDetail = () => {
       return;
     }
 
-    const res = await fetch('http://localhost:3000/api/cart/add', {
+    const res = await fetch('https://localhost:3000/api/cart/add', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -129,7 +129,7 @@ const ProductDetail = () => {
         icon: false,
       });
 
-      const res2 = await fetch('http://localhost:3000/api/cart', {
+      const res2 = await fetch('https://localhost:3000/api/cart', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const cartData = await res2.json();
@@ -164,14 +164,14 @@ const ProductDetail = () => {
 
     try {
       const res = await axios.post(
-        'http://localhost:3000/api/payment/initiate',
+        'https://localhost:3000/api/payment/initiate',
         {
           mode: 'buy-now',
           productId: product._id,
           qty: quantity,
           color: selectedColor,
           size: selectedSize,
-          return_url: 'http://localhost:5173/payment-status',
+          return_url: 'https://localhost:5173/payment-status',
         },
         {
           headers: {
@@ -197,7 +197,7 @@ const ProductDetail = () => {
   if (!reviewRating || !reviewText.trim()) return toast.warn("Please add a rating and comment");
 
   try {
-    const res = await fetch(`http://localhost:3000/api/reviews/${id}`, {
+    const res = await fetch(`https://localhost:3000/api/reviews/${id}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -229,7 +229,7 @@ const ProductDetail = () => {
     const token = localStorage.getItem('token');
     if (!token) return;
     try {
-      await fetch(`http://localhost:3000/api/reviews/${reviewId}`, {
+      await fetch(`https://localhost:3000/api/reviews/${reviewId}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -255,8 +255,8 @@ const ProductDetail = () => {
   const sizes = product?.sizes?.map(s => s.size) || [];
   const thumbnails = product
     ? [
-        `http://localhost:3000/uploads/${product.image}`,
-        ...(product.images ? product.images.map(img => `http://localhost:3000/uploads/${img}`) : [])
+        `https://localhost:3000/uploads/${product.image}`,
+        ...(product.images ? product.images.map(img => `https://localhost:3000/uploads/${img}`) : [])
       ]
     : [mainImg, img1, img2, img3];
 
@@ -519,7 +519,7 @@ const ProductDetail = () => {
               {/* Image Container */}
               <div className="w-full h-72 overflow-hidden relative z-0">
                 <img
-                  src={`http://localhost:3000/uploads/${prod.image}`}
+                  src={`https://localhost:3000/uploads/${prod.image}`}
                   alt={prod.title}
                   className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                 />
