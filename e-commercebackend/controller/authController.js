@@ -123,22 +123,59 @@ exports.registerUser = async (req, res) => {
     return res.status(400).json({ message: "Password must contain at least one uppercase letter, one lowercase letter, one number, and one symbol." });
   }
   try {
-    const existingUser = await User.findOne({ email: email.trim().toLowerCase() });
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(409).json({ message: "Email already registered." });
+      return res.status(400).json({ message: "User already exists" });
     }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = new User({
       fullName,
-      email: email.trim().toLowerCase(),
+      email,
       phone,
       address,
-      password: hashedPassword
+      password: hashedPassword,
+      role: 'user'
     });
+
     await user.save();
-    res.status(201).json({ message: "User registered successfully." });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(201).json({ message: "User registered successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
-// ...existing code...
+};
+
+// Admin logout endpoint
+exports.logoutAdmin = async (req, res) => {
+  try {
+    // Clear the JWT token cookie
+    res.cookie('jwt', 'none', {
+      expires: new Date(Date.now() + 5 * 1000), // Expires in 5 seconds
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // Use secure in production
+      sameSite: 'strict',
+    });
+
+    // Clear any session data
+    if (req.session) {
+      req.session.destroy(err => {
+        if (err) {
+          console.error('Error destroying session:', err);
+        }
+      });
+    }
+
+    res.status(200).json({ 
+      success: true,
+      message: "Admin logged out successfully",
+      redirect: "/" // Redirect to home page
+    });
+  } catch (err) {
+    console.error('Logout error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: "Error during logout",
+      error: err.message 
+    });
+  }
 };

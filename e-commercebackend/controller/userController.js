@@ -118,6 +118,7 @@ exports.loginUser = async (req, res) => {
     user.lockUntil = undefined;
     await user.save();
     const token = jwt.sign({ id: user._id, role: user.role }, "supersecret", { expiresIn: '7d' });
+    req.session.userId = user._id; // Save user ID in session
     res.status(200).json({ token, user });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -137,6 +138,20 @@ exports.getUser = async (req, res) => {
     res.status(200).json({
       ...user._doc,
       location
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Get All Users (admin route) - only users with role 'user'
+exports.getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find({ role: 'user' }).select('fullName email phone address image role isVerified _id');
+    res.status(200).json({
+      success: true,
+      count: users.length,
+      users
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -270,5 +285,24 @@ exports.changePassword = async (req, res) => {
   user.password = await bcrypt.hash(newPassword, 10);
   await user.save();
   res.json({ message: 'Password updated successfully' });
+};
+
+// Logout User
+exports.logoutUser = (req, res) => {
+  req.session.destroy(err => {
+    if (err) {
+      return res.status(500).json({ message: 'Logout failed' });
+    }
+    console.log('User logged out and session destroyed');
+    res.status(200).json({ message: 'Logged out successfully' });
+  });
+};
+
+// Middleware to check if session is valid (not expired)
+exports.isAuthenticated = (req, res, next) => {
+  if (req.session && req.session.userId) {
+    return next();
+  }
+  return res.status(401).json({ message: 'Session expired or not logged in' });
 };
 
