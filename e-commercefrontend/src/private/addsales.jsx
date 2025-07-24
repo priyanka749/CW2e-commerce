@@ -18,7 +18,7 @@ const AdminSales = () => {
   // Fetch sale products
   const fetchSales = async () => {
     try {
-      const res = await axios.get('http://localhost:3000/api/sales');
+      const res = await axios.get('https://localhost:3000/api/sales');
       setSales(res.data);
     } catch (err) {
       toast.error('Failed to fetch sales');
@@ -52,7 +52,7 @@ const AdminSales = () => {
     data.append('image', form.image);
 
     try {
-      await axios.post('http://localhost:3000/api/sales', data);
+      await axios.post('https://localhost:3000/api/sales', data);
       toast.success('Sale product added');
       setShowModal(false);
       setForm({ title: '', price: '', originalPrice: '', description: '', colors: '', sizes: '', image: null });
@@ -66,7 +66,7 @@ const AdminSales = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this sale product?')) return;
     try {
-      await axios.delete(`http://localhost:3000/api/sales/${id}`);
+      await axios.delete(`https://localhost:3000/api/sales/${id}`);
       toast.success('Sale product deleted');
       fetchSales();
     } catch (err) {
@@ -88,7 +88,7 @@ const AdminSales = () => {
         {sales.map((sale) => (
           <div key={sale._id} className="border rounded-xl shadow p-4 flex flex-col">
             <img
-              src={`http://localhost:3000/uploads/${sale.image}`}
+              src={`https://localhost:3000/uploads/${sale.image}`}
               alt={sale.title}
               className="w-full h-48 object-cover rounded mb-3"
             />
