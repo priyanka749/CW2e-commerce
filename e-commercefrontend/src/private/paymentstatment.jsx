@@ -7,7 +7,13 @@ const PaymentManagement = () => {
 
   const fetchOrders = async () => {
     try {
-      const res = await axios.get("http://localhost:3000/api/payments/orders");
+      const token = localStorage.getItem('token');
+      const res = await axios.get("https://localhost:3000/api/payments/orders", {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
       setOrders(res.data);
     } catch (err) {
       console.error(err);
@@ -20,7 +26,13 @@ const PaymentManagement = () => {
     if (!confirmed) return;
 
     try {
-      await axios.delete(`http://localhost:3000/api/payments/orders/${orderId}`);
+      const token = localStorage.getItem('token');
+      await axios.delete(`https://localhost:3000/api/payments/orders/${orderId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
       toast.success("Order deleted successfully");
       fetchOrders();
     } catch (err) {
