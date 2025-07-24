@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { FaEdit, FaTrash, FaPlus, FaCheckCircle, FaTimes } from 'react-icons/fa';
 
-const API_URL = 'http://localhost:3000/api/products';
-const CATEGORY_API = 'http://localhost:3000/api/categories';
+const API_URL = 'https://localhost:3000/api/products';
+const CATEGORY_API = 'https://localhost:3000/api/categories';
 
 const themeColor = '#8B6B3E';
 
@@ -107,7 +107,7 @@ const AdminAddProduct = () => {
       sizes: data.sizes && data.sizes.length > 0 ? data.sizes : [{ size: '', stock: '' }],
     });
     setMainImage(null);
-    setPreviewMain(data.image ? `http://localhost:3000/uploads/${data.image}` : null);
+    setPreviewMain(data.image ? `https://localhost:3000/uploads/${data.image}` : null);
     setVariantImages([]);
     setEditingProductId(productId);
   };
@@ -308,7 +308,7 @@ const AdminAddProduct = () => {
                     <tr key={product._id} className="border-t border-[#e2c799] hover:bg-[#f9f6f2] transition">
                       <td className="py-2 px-4">
                         <img
-                          src={`http://localhost:3000/uploads/${product.image}`}
+                          src={`https://localhost:3000/uploads/${product.image}`}
                           alt={product.title}
                           className="w-14 h-14 object-cover rounded border border-[#e2c799]"
                         />
