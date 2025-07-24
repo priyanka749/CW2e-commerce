@@ -1,3 +1,14 @@
+// // User logout function
+// async function handleUserLogout() {
+//   await fetch('https://localhost:3000/api/users/logout', {
+//     method: 'POST',
+//     credentials: 'include',
+//   });
+//   localStorage.removeItem('token');
+//   localStorage.removeItem('user');
+//   localStorage.removeItem('userId');
+//   window.location.href = '/login';
+// }
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
@@ -66,7 +77,7 @@ const Login = () => {
     const fetchQRCode = async () => {
       if (pendingAdmin && showMFAModal && isInitialMFASetup) {
         try {
-          const res = await axios.post('http://localhost:3000/api/auth/admin/setup-mfa', {
+          const res = await axios.post('https://localhost:3000/api/auth/admin/setup-mfa', {
             email: pendingAdmin.email,
           });
           setQrCodeDataUrl(res.data.qr); // Use 'qr' from backend response
@@ -107,7 +118,13 @@ const Login = () => {
     }
 
     try {
-      const res = await axios.post('http://localhost:3000/api/users/login', form);
+      const res = await axios.post('https://localhost:3000/api/users/login', form, { withCredentials: true });
+
+      if (!res.data.user) {
+        setBackendError('Login response missing user data.');
+        toast.error('Login failed: No user data returned.');
+        return;
+      }
 
       // Save token and user info
       localStorage.setItem('user', JSON.stringify(res.data.user));
@@ -117,18 +134,19 @@ const Login = () => {
         // Check if admin already has MFA set up using localStorage
         const mfaSetupKey = `mfa_setup_${res.data.user._id}`;
         const hasMFASetup = localStorage.getItem(mfaSetupKey) === 'true';
-        
+
         // Show MFA modal, don't navigate yet
         setPendingAdmin({ email: form.email, userId: res.data.user._id });
         setIsInitialMFASetup(!hasMFASetup); // Only show QR if MFA not set up
         setShowMFAModal(true);
-        
+
         if (hasMFASetup) {
           toast.success('Password verified! Enter your MFA code.');
         } else {
           toast.success('Password verified! Set up MFA by scanning the QR code, then enter the code.');
         }
-      } else if (res.data.user.role === 'user') {
+      } else {
+        // User login (no MFA)
         localStorage.setItem('token', res.data.token);
         toast.success('Login successful!');
         navigate('/home');
@@ -143,24 +161,25 @@ const Login = () => {
   // MFA verification handler
   const handleVerifyMFA = async () => {
     setMfaError('');
+    
     if (!mfaCode || mfaCode.length !== 6) {
       setMfaError('Please enter a valid 6-digit code.');
       return;
     }
     try {
-      const res = await axios.post('http://localhost:3000/api/auth/login', {
+      const res = await axios.post('https://localhost:3000/api/auth/login', {
         email: form.email,
         password: form.password,
         mfaCode: mfaCode,
       });
       localStorage.setItem('token', res.data.token);
-      
+
       // Mark MFA as set up for this admin user
       if (pendingAdmin && pendingAdmin.userId) {
         const mfaSetupKey = `mfa_setup_${pendingAdmin.userId}`;
         localStorage.setItem(mfaSetupKey, 'true');
       }
-      
+
       toast.success('Admin login successful!');
       setShowMFAModal(false);
       setMfaCode('');
@@ -204,7 +223,7 @@ const Login = () => {
         <div className="w-full md:w-1/2 flex items-center justify-center px-7 pt-35 pb-60">
           <div className="w-full max-w-xl max-h-[900px] space-y-8">
             {/* Email & Password */}
-            {[ 
+            {[
               { type: "email", placeholder: "Email", icon: "envelope", name: "email" },
               { type: "password", placeholder: "Password", icon: "lock", id: "password", name: "password" },
             ].map((field, idx) => {
@@ -251,12 +270,12 @@ const Login = () => {
               );
             })}
 
-           <div
-  className="text-sm text-right text-[#540b0e] font-medium hover:underline cursor-pointer"
-  onClick={() => navigate('/forgot-password')}
->
-  Forgot Password?
-</div>
+            <div
+              className="text-sm text-right text-[#540b0e] font-medium hover:underline cursor-pointer"
+              onClick={() => navigate('/forgot-password')}
+            >
+              Forgot Password?
+            </div>
 
             {/* Login Button */}
             <div className="flex justify-center ">

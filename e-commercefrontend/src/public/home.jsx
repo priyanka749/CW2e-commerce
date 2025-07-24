@@ -39,7 +39,7 @@ const HomePage = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const BASE_URL = 'http://localhost:3000';
+  const BASE_URL = 'https://localhost:3000';
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -52,7 +52,7 @@ const HomePage = () => {
       try {
         const res = await fetch(`${BASE_URL}/api/categories`);
         if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
+          throw new Error(`https error! status: ${res.status}`);
         }
         const data = await res.json();
         
@@ -78,7 +78,7 @@ const HomePage = () => {
         const res = await fetch(`${BASE_URL}/api/products`);
         
         if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
+          throw new Error(`https error! status: ${res.status}`);
         }
         
         const data = await res.json();
