@@ -1,3 +1,14 @@
+// User logout function
+async function handleUserLogout(navigate) {
+  await fetch('https://localhost:3000/api/users/logout', {
+    method: 'POST',
+    credentials: 'include',
+  });
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  localStorage.removeItem('userId');
+  navigate('/login');
+}
 import { useEffect, useState } from 'react';
 import {
   FaBoxOpen,
@@ -9,7 +20,7 @@ import { useNavigate } from 'react-router-dom';
 import Footer from '../components/footer';
 import Navbar from '../components/nav';
 
-const BASE_URL = "http://localhost:3000";
+const BASE_URL = "https://localhost:3000";
 
 const navItems = [
   { label: 'Account Details', icon: <FaUserCircle /> },
@@ -37,38 +48,72 @@ const Profile = () => {
   const [pwSuccess, setPwSuccess] = useState('');
 
   useEffect(() => {
-    const u = localStorage.getItem('user');
-    if (u) {
-      const parsed = JSON.parse(u);
-      if (parsed && parsed._id) {
-        setLoading(true);
-        fetch(`${BASE_URL}/api/users/${parsed._id}`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        })
-          .then((res) => res.json())
-          .then((data) => {
-            if (!data.message) {
-              setProfile(data);
-              setForm(data);
-              setImagePreview(data.image ? `${BASE_URL}${data.image}` : '');
-            }
-            setLoading(false);
-          })
-          .catch(() => {
-            setError('Failed to fetch user');
-            setLoading(false);
-          });
-      }
+    setLoading(true);
+    const user = localStorage.getItem('user');
+    const token = localStorage.getItem('token');
+    if (!user || !token) {
+      setError('No user session found. Please log in again.');
+      setTimeout(() => {
+        navigate('/login');
+      }, 1500);
+      setLoading(false);
+      return;
     }
+    fetch(`${BASE_URL}/api/users/profile`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      credentials: 'include',
+    })
+      .then((res) => {
+        if (res.status === 401) {
+          setError('Session expired. Please log in again.');
+          localStorage.removeItem('user');
+          localStorage.removeItem('token');
+          setTimeout(() => {
+            navigate('/login');
+          }, 1500);
+          return null;
+        }
+        return res.json();
+      })
+      .then((data) => {
+        if (data && !data.message && (data.fullName || data.name || data.email)) {
+          setProfile(data);
+          setForm(data);
+          setImagePreview(data.image ? `${BASE_URL}${data.image}` : '');
+        } else {
+          // Fallback to localStorage user info if API fails or returns empty
+          const localUser = JSON.parse(user);
+          if (localUser && (localUser.fullName || localUser.name || localUser.email)) {
+            setProfile(localUser);
+            setForm(localUser);
+            setImagePreview(localUser.image ? `${BASE_URL}${localUser.image}` : '');
+          } else {
+            setError('Failed to load profile. Please log out and log in again.');
+          }
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        // Fallback to localStorage user info if API fails
+        const localUser = JSON.parse(user);
+        if (localUser && (localUser.fullName || localUser.name || localUser.email)) {
+          setProfile(localUser);
+          setForm(localUser);
+          setImagePreview(localUser.image ? `${BASE_URL}${localUser.image}` : '');
+        } else {
+          setError('Failed to fetch user. Please log out and log in again.');
+        }
+        setLoading(false);
+      });
   }, []);
 
   useEffect(() => {
   if (active === 'My Orders') {
     const user = JSON.parse(localStorage.getItem('user'));
     if (user && user._id) {
-      fetch(`http://localhost:3000/api/payments/orders/${user._id}`)
+      fetch(`https://localhost:3000/api/payments/orders/${user._id}`)
         .then((res) => res.json())
         .then((data) => setOrders(Array.isArray(data) ? data : []))
         .catch((err) => console.error(err));
@@ -173,9 +218,7 @@ const Profile = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    navigate('/signup');
+    handleUserLogout(navigate);
   };
 
   const getInitialName = (name) => {
