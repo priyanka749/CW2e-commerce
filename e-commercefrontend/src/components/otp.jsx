@@ -42,7 +42,7 @@ const OtpVerification = () => {
     }
 
     try {
-      const response = await axios.post('http://localhost:3000/api/users/verify-otp', {
+      const response = await axios.post('https://localhost:3000/api/users/verify-otp', {
         userId,
         otp: enteredOtp,
       });

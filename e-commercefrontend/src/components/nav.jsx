@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import logo from '../assets/images/logo.png';
 import Chat from '../public/chat'; // Your Chat component
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = 'https://localhost:3000';
 
 const Navbar = () => {
   const navigate = useNavigate();

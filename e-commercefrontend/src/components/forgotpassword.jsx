@@ -4,7 +4,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import logo from '../assets/images/logo1.png';
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = 'https://localhost:3000';
 
 const ForgotPassword = () => {
   const [step, setStep] = useState(1); // 1: Email, 2: OTP, 3: Reset
