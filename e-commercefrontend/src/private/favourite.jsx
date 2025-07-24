@@ -7,7 +7,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import Footer from '../components/footer';
 import Navbar from '../components/nav';
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = 'https://localhost:3000';
 
 const Favourite = () => {
   const [favorites, setFavorites] = useState([]);
