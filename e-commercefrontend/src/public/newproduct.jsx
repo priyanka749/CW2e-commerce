@@ -62,7 +62,7 @@ const NewArrivals = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const res = await fetch('http://localhost:3000/api/products');
+      const res = await fetch('httpss://localhost:3000/api/products');
       const data = await res.json();
       setProducts(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -74,7 +74,7 @@ const NewArrivals = () => {
 
   const fetchFavorites = async () => {
     try {
-      const res = await fetch(`http://localhost:3000/api/users/favorites`, {
+      const res = await fetch(`https://localhost:3000/api/users/favorites`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -104,8 +104,8 @@ const NewArrivals = () => {
     }
 
     const url = isFav
-      ? 'http://localhost:3000/api/favorites/remove'
-      : 'http://localhost:3000/api/favorites/add';
+      ? 'https://localhost:3000/api/favorites/remove'
+      : 'https://localhost:3000/api/favorites/add';
 
     const res = await fetch(url, {
       method: 'POST',
@@ -153,7 +153,7 @@ const NewArrivals = () => {
       alert('Please log in to add to cart.');
       return;
     }
-    const res = await fetch('http://localhost:3000/api/cart/add', {
+    const res = await fetch('https://localhost:3000/api/cart/add', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -177,7 +177,7 @@ const NewArrivals = () => {
         hideProgressBar: false,
         icon: false,
       });
-      const res2 = await fetch('http://localhost:3000/api/cart', {
+      const res2 = await fetch('https://localhost:3000/api/cart', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const cartData = await res2.json();
@@ -287,7 +287,7 @@ const NewArrivals = () => {
                   </div>
                   <div className="relative w-full h-[330px] overflow-hidden cursor-pointer" onClick={() => navigate(`/product/${product._id}`)}>
                     <img
-                      src={`http://localhost:3000/uploads/${product.image}`}
+                      src={`https://localhost:3000/uploads/${product.image}`}
                       alt={product.title}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
