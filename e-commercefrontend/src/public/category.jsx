@@ -4,7 +4,7 @@ import Navbar from '../components/nav';
 import Footer from '../components/footer';
 import { FaHeart, FaStar, FaSearch } from 'react-icons/fa';
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = 'https://localhost:3000';
 
 const CategoryPage = () => {
   const { categoryName } = useParams();
