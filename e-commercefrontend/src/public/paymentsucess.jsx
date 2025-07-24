@@ -27,7 +27,7 @@ const PaymentSuccess = () => {
       const products = tempOrder.products;
 
       try {
-        const res = await axios.post("http://localhost:3000/api/payments/khalti/verify", {
+        const res = await axios.post("https://localhost:3000/api/payments/khalti/verify", {
           pidx,
           userId,
           amount,

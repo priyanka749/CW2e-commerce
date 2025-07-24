@@ -33,7 +33,7 @@ const Payment = () => {
           };
           localStorage.setItem("khaltiTempOrder", JSON.stringify(orderData));
           const res = await axios.post(
-            "http://localhost:3000/api/payments/khalti/initiate",
+            "httpss://localhost:3000/api/payments/khalti/initiate",
             orderData,
             { headers: { Authorization: `Bearer ${token}` } }
           );
@@ -59,7 +59,7 @@ const Payment = () => {
           };
           localStorage.setItem("khaltiTempOrder", JSON.stringify(orderData));
           const res = await axios.post(
-            "http://localhost:3000/api/payments/khalti/initiate",
+            "https://localhost:3000/api/payments/khalti/initiate",
             orderData,
             { headers: { Authorization: `Bearer ${token}` } }
           );
