@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { protect } = require('../middleware/auth');
 const {
   initiateKhaltiPayment,
   verifyKhaltiPayment,
@@ -15,7 +16,7 @@ router.post('/khalti/verify', verifyKhaltiPayment);
 router.get('/orders/:userId', getUserOrders); 
 
 // Admin: Get all orders
-router.get('/orders', getAllOrders);
+router.get('/orders', protect, getAllOrders);
 
 // Admin: Delete an order
 router.delete('/orders/:id', deleteOrder);
