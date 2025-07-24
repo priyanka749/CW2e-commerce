@@ -41,7 +41,7 @@ const Chatbot = () => {
 
       // Check if user has items in cart
       try {
-        const cartResponse = await axios.get('http://localhost:3000/api/cart', {
+        const cartResponse = await axios.get('httpss://localhost:3000/api/cart', {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -116,7 +116,7 @@ const Chatbot = () => {
         }
       } else {
         // Regular chat response
-        const response = await axios.post('http://localhost:3000/api/chat', {
+        const response = await axios.post('https://localhost:3000/api/chat', {
           message: currentInput,
         });
 
@@ -164,7 +164,7 @@ const Chatbot = () => {
                 setTimeout(() => navigate('/cart'), 2000);
               }
             } else {
-              axios.post('http://localhost:3000/api/chat', { message: transcript })
+              axios.post('https://localhost:3000/api/chat', { message: transcript })
                 .then((response) => {
                   const botMessage = { sender: 'bot', text: response.data.reply };
                   setMessages((prev) => [...prev, botMessage]);
