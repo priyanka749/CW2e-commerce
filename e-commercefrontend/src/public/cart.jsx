@@ -83,7 +83,7 @@ export default function Cart() {
 
   const fetchCart = async () => {
     const token = localStorage.getItem('token');
-    const res = await fetch('http://localhost:3000/api/cart', {
+    const res = await fetch('https://localhost:3000/api/cart', {
       headers: { Authorization: `Bearer ${token}` },
     });
     const data = await res.json();
@@ -107,7 +107,7 @@ export default function Cart() {
           return {
             ...item,
             id: product?._id,
-            image: product ? `http://localhost:3000/uploads/${product.image}` : '',
+            image: product ? `https://localhost:3000/uploads/${product.image}` : '',
             title: product?.title || 'Unavailable',
             desc: product?.fabric || '',
             price: product?.price || 0,
@@ -132,7 +132,7 @@ export default function Cart() {
     // If trying to increase, check stock from backend
     if (delta > 0) {
       try {
-        const res = await fetch(`http://localhost:3000/api/products/${id}`);
+        const res = await fetch(`https://localhost:3000/api/products/${id}`);
         const data = await res.json();
         const sizeEntry = data?.sizes?.find(s => s.size === size || s.label === size);
         const stock = sizeEntry?.stock || 0;
@@ -149,7 +149,7 @@ export default function Cart() {
     }
 
     const token = localStorage.getItem('token');
-    await fetch('http://localhost:3000/api/cart/update', {
+    await fetch('https://localhost:3000/api/cart/update', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -176,7 +176,7 @@ export default function Cart() {
     const item = cart.find((i) => i.id === itemToRemove);
     if (!item) return;
     const token = localStorage.getItem('token');
-    await fetch('http://localhost:3000/api/cart/remove', {
+    await fetch('https://localhost:3000/api/cart/remove', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -206,7 +206,7 @@ export default function Cart() {
 
   const handleAddToCart = async (product) => {
     // ...existing logic to get size/color...
-    const res = await fetch('http://localhost:3000/api/cart/add', {
+    const res = await fetch('https://localhost:3000/api/cart/add', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -254,7 +254,7 @@ export default function Cart() {
 
     try {
       const res = await axios.post(
-        'http://localhost:3000/api/payments/khalti/initiate',
+        'https://localhost:3000/api/payments/khalti/initiate',
         {
           amount: totalAmt,
           userId: localStorage.getItem('userId'), // Ensure this exists
