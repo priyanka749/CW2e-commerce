@@ -2,7 +2,7 @@ import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { FaBoxOpen, FaClipboardList, FaMoneyCheckAlt, FaQuestionCircle, FaSignOutAlt, FaTags, FaTrash, FaUsers } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import logo from '../assets/images/logo.png';
+import logo from '../assets/images/logoo.png';
 import ImageUploadWithName from './add';
 import AdminAddProduct from './addproduct';
 import AdminSales from './addsales';

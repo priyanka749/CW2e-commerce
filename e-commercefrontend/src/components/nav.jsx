@@ -131,7 +131,7 @@ useEffect(() => {
           <img
             src={logo}
             alt="Logo"
-            className="h-16 w-16 object-cover cursor-pointer"
+            className="h-19 w-19 object-cover cursor-pointer"
             onClick={() => navigate('/home')}
           />
         </div>
