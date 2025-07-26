@@ -16,9 +16,24 @@ import { useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 // Axios instance with interceptor for auto-refresh and session expiration handling
+// Always use withCredentials: true so cookies (refreshToken) are sent with requests
 const api = axios.create({
   withCredentials: true,
 });
+
+// Example backend CORS and cookie settings (for reference):
+// const cors = require('cors');
+// app.use(cors({
+//   origin: 'https://localhost:5173', // your frontend URL
+//   credentials: true
+// }));
+// res.cookie('refreshToken', token, {
+//   httpOnly: true,
+//   secure: true, // only if using HTTPS
+//   sameSite: 'none', // 'lax' for same-site, 'none' for cross-site
+//   path: '/',
+//   maxAge: 7 * 24 * 60 * 60 * 1000
+// });
 
 // Add Authorization header to protected requests (not login, signup, refresh, etc.)
 api.interceptors.request.use(
@@ -63,6 +78,9 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
+// Axios response interceptor: Handles automatic access token refresh on 401/403 errors.
+// The isLoginOrRefresh variable ensures that refresh logic is only triggered for protected API calls,
+// and NOT for login or refresh endpoints themselves (to avoid infinite loops).
 api.interceptors.response.use(
   response => response,
   async error => {
@@ -75,6 +93,7 @@ api.interceptors.response.use(
       originalRequest.url.includes('/api/admin/refresh-token')
     );
     if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry && !isLoginOrRefresh) {
+      console.log('[Token Refresh] Access token expired or invalid. Attempting refresh...');
       originalRequest._retry = true;
       if (isRefreshing) {
         // Queue requests while refreshing
@@ -82,6 +101,7 @@ api.interceptors.response.use(
           failedQueue.push({ resolve, reject });
         })
           .then(token => {
+            console.log('[Token Refresh] Request resumed with new token.');
             originalRequest.headers['Authorization'] = 'Bearer ' + token;
             return api(originalRequest);
           })
@@ -93,31 +113,32 @@ api.interceptors.response.use(
         let refreshRes;
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         if (user && user.role === 'admin') {
+          // Always use withCredentials: true for refresh
+          console.log('[Token Refresh] Calling admin refresh endpoint...');
           refreshRes = await axios.post('https://localhost:3000/api/admin/refresh-token', {}, { withCredentials: true });
         } else {
+          console.log('[Token Refresh] Calling user refresh endpoint...');
           refreshRes = await axios.post('https://localhost:3000/api/users/refresh-token', {}, { withCredentials: true });
         }
         const newToken = refreshRes.data.token;
         if (newToken) {
+          console.log('[Token Refresh] New access token received and set.');
           localStorage.setItem('token', newToken);
           processQueue(null, newToken);
           // Update Authorization header for the original request and all future requests
           originalRequest.headers['Authorization'] = 'Bearer ' + newToken;
-          // Also update default headers for the api instance
           api.defaults.headers.common['Authorization'] = 'Bearer ' + newToken;
           return api(originalRequest);
         } else {
+          // If refresh endpoint returns no token, just reject and stay on the page
+          console.warn('[Token Refresh] No new token received from refresh endpoint.');
           processQueue('No token', null);
-          // Redirect to login if no token
-          localStorage.clear();
-          window.location.href = '/login';
           return Promise.reject(error);
         }
       } catch (refreshErr) {
+        // For any refresh error, just reject and stay on the page (do not clear localStorage or show error)
+        console.error('[Token Refresh] Refresh failed:', refreshErr);
         processQueue(refreshErr, null);
-        // Clear session and redirect to login
-        localStorage.clear();
-        window.location.href = '/login';
         return Promise.reject(refreshErr);
       } finally {
         isRefreshing = false;

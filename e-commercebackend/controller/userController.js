@@ -146,12 +146,12 @@ exports.loginUser = async (req, res) => {
     const accessToken = jwt.sign({ userId: user._id, role: user.role }, "supersecret", { expiresIn: '15m' });
     const refreshToken = jwt.sign({ userId: user._id, role: user.role }, "refreshsecret", { expiresIn: '7d' });
     // Set refresh token as HTTP-only cookie
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: true, // set to true for HTTPS
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    });
+   res.cookie('refreshToken', refreshToken, {
+  httpOnly: true,
+  secure: true,         // <--- MUST be true for HTTPS
+  sameSite: 'none',     // <--- MUST be 'none' for cross-site cookies with HTTPS
+  maxAge: 7 * 24 * 60 * 60 * 1000
+});
     req.session.userId = user._id; // Save user ID in session
     // Log successful login
     logAudit('LOGIN_SUCCESS', user._id);

@@ -7,7 +7,7 @@ exports.refreshToken = (req, res) => {
     const newAccessToken = jwt.sign(
       { userId: decoded.userId, role: decoded.role },
       "supersecret",
-      { expiresIn: '15m' }
+      { expiresIn: '1m' }
     );
     res.json({ token: newAccessToken });
   } catch (err) {

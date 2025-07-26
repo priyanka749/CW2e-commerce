@@ -19,7 +19,7 @@ const pages = [
 ];
 
 const AdminDashboard = () => {
-  const [activePage, setActivePage] = useState('products');
+  const [activePage, setActivePage] = useState('dashboard');
   const [users, setUsers] = useState([]);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -192,57 +192,112 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-[#e3f0ff] via-[#f0f6fa] to-[#c7e0f4]">
-      {/* Sidebar */}
-      <aside className="w-72 bg-[#540b0e] text-white flex flex-col py-10 px-6 shadow-2xl rounded-tr-3xl rounded-br-3xl justify-between">
-        <div>
-          <div className="flex flex-col items-center mb-10">
-            <div
-              className="w-24 h-24 rounded-full bg-white flex items-center justify-center shadow-lg border-4 border-[#e2c799] cursor-pointer"
-              onClick={() => navigate('/home')}
-            >
-              <img
-                src={logo}
-                alt="Logo"
-                className="w-20 h-20 rounded-full object-contain"
-              />
-            </div>
-            <h2 className="text-3xl font-extrabold mb-1 tracking-wide drop-shadow text-[#540b0e]">Admin Dashboard</h2>
-            <span className="text-[#e2c799] font-medium text-base">Welcome, Admin</span>
-          </div>
-          <nav className="flex flex-col gap-2 mt-6">
-            {pages.map((page) => (
-              <button
-                key={page.key}
-                onClick={() => handleSidebarClick(page.key)}
-                className={`flex items-center gap-3 py-3 px-5 rounded-xl text-left font-semibold transition-all duration-200
-                  ${activePage === page.key
-                    ? 'bg-[#e2c799] text-[#540b0e] shadow-lg scale-105'
-                    : 'hover:bg-[#e2c799]/80 hover:text-[#540b0e]'
-                  }`}
-              >
-                <span className="text-xl">{page.icon}</span>
-                <span className="text-lg">{page.label}</span>
-              </button>
-            ))}
-          </nav>
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-[#e3f0ff] via-[#f0f6fa] to-[#c7e0f4]">
+      {/* Top Bar with Dashboard Button */}
+      <div className="w-full flex items-center justify-between px-10 py-6 bg-white/80 shadow-lg rounded-b-3xl mb-4 sticky top-0 z-20">
+        <div className="flex items-center gap-4">
+          <img src={logo} alt="Logo" className="h-14 w-14 rounded-full object-contain shadow border-2 border-[#e2c799]" />
+          <span className="text-3xl font-extrabold text-[#540b0e] tracking-wide drop-shadow">Admin Panel</span>
         </div>
         <button
-          onClick={handleLogout}
-          className="flex items-center gap-3 py-3 px-5 rounded-xl font-semibold transition-all duration-200 bg-gradient-to-r from-[#2563eb] to-[#14b8a6] hover:from-[#1e3a8a] hover:to-[#38bdf8] text-white mt-8 shadow-lg"
+          onClick={() => { setActivePage('dashboard'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+          className="px-8 py-3 bg-gradient-to-r from-[#e2c799] to-[#540b0e] text-white text-xl font-bold rounded-full shadow-lg hover:from-[#540b0e] hover:to-[#e2c799] hover:text-[#540b0e] hover:bg-white border-2 border-[#e2c799] transition-all duration-200"
         >
-          <FaSignOutAlt /> Logout
+          Dashboard
         </button>
-      </aside>
-      {/* Main Content */}
-      <main className="flex-1 p-10 flex flex-col bg-white/95 rounded-3xl m-8 shadow-2xl">
-        <div className="mb-8 flex items-center gap-4">
-          {pages.find((p) => p.key === activePage)?.icon}
-          <h3 className="text-3xl font-extrabold text-[#2563eb] tracking-wide drop-shadow">
-            {pages.find((p) => p.key === activePage)?.label}
-          </h3>
-        </div>
-        <div className="flex-1 bg-gradient-to-br from-[#e0f2fe] via-[#f0f6fa] to-[#a5f3fc] rounded-2xl shadow-inner p-8 min-h-[350px] flex items-center justify-center">
+      </div>
+      <div className="flex flex-1">
+        {/* Sidebar */}
+        <aside className="w-72 bg-[#540b0e] text-white flex flex-col py-10 px-6 shadow-2xl rounded-tr-3xl rounded-br-3xl justify-between">
+          <div>
+            <div className="flex flex-col items-center mb-10">
+              <div
+                className="w-24 h-24 rounded-full bg-white flex items-center justify-center shadow-lg border-4 border-[#e2c799] cursor-pointer"
+                onClick={() => navigate('/home')}
+              >
+                <img
+                  src={logo}
+                  alt="Logo"
+                  className="w-20 h-20 rounded-full object-contain"
+                />
+              </div>
+              <h2 className="text-3xl font-extrabold mb-1 tracking-wide drop-shadow text-[#540b0e]">Admin Dashboard</h2>
+              <span className="text-[#e2c799] font-medium text-base">Welcome, Admin</span>
+            </div>
+            <nav className="flex flex-col gap-2 mt-6">
+              {pages.map((page) => (
+                <button
+                  key={page.key}
+                  onClick={() => handleSidebarClick(page.key)}
+                  className={`flex items-center gap-3 py-3 px-5 rounded-xl text-left font-semibold transition-all duration-200
+                    ${activePage === page.key
+                      ? 'bg-[#e2c799] text-[#540b0e] shadow-lg scale-105'
+                      : 'hover:bg-[#e2c799]/80 hover:text-[#540b0e]'
+                    }`}
+                >
+                  <span className="text-xl">{page.icon}</span>
+                  <span className="text-lg">{page.label}</span>
+                </button>
+              ))}
+            </nav>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 py-3 px-5 rounded-xl font-semibold transition-all duration-200 bg-gradient-to-r from-[#2563eb] to-[#14b8a6] hover:from-[#1e3a8a] hover:to-[#38bdf8] text-white mt-8 shadow-lg"
+          >
+            <FaSignOutAlt /> Logout
+          </button>
+        </aside>
+        {/* Main Content */}
+        <main className="flex-1 p-10 flex flex-col bg-white/95 rounded-3xl m-8 shadow-2xl">
+          {/* Dashboard Overview Section */}
+          {activePage === 'dashboard' && (
+            <div className="w-full flex flex-col items-center justify-center gap-10">
+              <div className="w-full grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8">
+                <div
+                  className="bg-gradient-to-br from-[#e2c799] to-[#fff9f3] rounded-2xl shadow-lg p-8 flex flex-col items-center cursor-pointer hover:scale-105 transition-transform duration-200"
+                  onClick={() => setActivePage('products')}
+                  title="Go to Product Management"
+                >
+                  <FaBoxOpen className="text-4xl text-[#540b0e] mb-2" />
+                  <div className="text-2xl font-bold text-[#540b0e]">Products</div>
+                  <div className="text-3xl font-extrabold text-[#2563eb]">Manage</div>
+                </div>
+                <div
+                  className="bg-gradient-to-br from-[#a5f3fc] to-[#e0f2fe] rounded-2xl shadow-lg p-8 flex flex-col items-center cursor-pointer hover:scale-105 transition-transform duration-200"
+                  onClick={() => setActivePage('orders')}
+                  title="Go to Order Management"
+                >
+                  <FaClipboardList className="text-4xl text-[#540b0e] mb-2" />
+                  <div className="text-2xl font-bold text-[#540b0e]">Orders</div>
+                  <div className="text-3xl font-extrabold text-[#2563eb]">Track</div>
+                </div>
+                <div
+                  className="bg-gradient-to-br from-[#f0f6fa] to-[#e2c799] rounded-2xl shadow-lg p-8 flex flex-col items-center cursor-pointer hover:scale-105 transition-transform duration-200"
+                  onClick={() => setActivePage('users')}
+                  title="Go to User Management"
+                >
+                  <FaUsers className="text-4xl text-[#540b0e] mb-2" />
+                  <div className="text-2xl font-bold text-[#540b0e]">Users</div>
+                  <div className="text-3xl font-extrabold text-[#2563eb]">View</div>
+                </div>
+                <div
+                  className="bg-gradient-to-br from-[#fff9f3] to-[#a5f3fc] rounded-2xl shadow-lg p-8 flex flex-col items-center cursor-pointer hover:scale-105 transition-transform duration-200"
+                  onClick={() => setActivePage('payments')}
+                  title="Go to Payment Statement"
+                >
+                  <FaMoneyCheckAlt className="text-4xl text-[#540b0e] mb-2" />
+                  <div className="text-2xl font-bold text-[#540b0e]">Payments</div>
+                  <div className="text-3xl font-extrabold text-[#2563eb]">Statement</div>
+                </div>
+              </div>
+              <div className="w-full flex flex-col items-center mt-8">
+                <h2 className="text-4xl font-extrabold text-[#540b0e] mb-2">Welcome to the Admin Dashboard</h2>
+                <p className="text-lg text-[#2563eb] text-center max-w-2xl">Get a quick overview and manage your e-commerce platform efficiently. Use the sidebar to access different management sections.</p>
+              </div>
+            </div>
+          )}
+          {/* Existing Pages */}
           {activePage === 'products' && <div className="w-full"><AdminAddProduct /></div>}
           {activePage === 'categories' && <div className="w-full"><ImageUploadWithName /></div>}
           {activePage === 'Sales' && <div className="w-full"><AdminSales /></div>}
@@ -258,7 +313,6 @@ const AdminDashboard = () => {
                   Refresh
                 </button>
               </div>
-
               {loading ? (
                 <div className="text-center py-8">
                   <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#2563eb]"></div>
@@ -360,14 +414,12 @@ const AdminDashboard = () => {
               <p className="text-[#2563eb]">View payment statements here.</p>
             </div>
           )}
-
           {activePage === 'Sales' && (
             <div className="text-center">
               <h4 className="text-2xl font-bold mb-2 text-[#2563eb]">Add Sales</h4>
               <p className="text-[#2563eb]">View sales statements here.</p>
             </div>
           )}
-
           {activePage === 'users' && (
             <div className="w-full">
               <div className="flex justify-between items-center mb-6">
@@ -379,7 +431,6 @@ const AdminDashboard = () => {
                   Refresh
                 </button>
               </div>
-
               {loading ? (
                 <div className="text-center py-8">
                   <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#2563eb]"></div>
@@ -471,15 +522,14 @@ const AdminDashboard = () => {
               )}
             </div>
           )}
-
           {activePage === 'queries' && (
             <div className="text-center">
               <h4 className="text-2xl font-bold mb-2 text-[#2563eb]">User Queries</h4>
               <p className="text-[#2563eb]">View and respond to user queries here.</p>
             </div>
           )}
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 };

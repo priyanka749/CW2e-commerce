@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const userController = require('../controller/userController');
 const upload = require('../middleware/upload');
-const { protect } = require('../middleware/auth');
+const { protect, refreshToken } = require('../middleware/auth');
 
 // ✅ Destructure functions from controller
 const {
@@ -55,6 +55,10 @@ router.post('/forgot-password/send-otp', sendForgotPasswordOTP);
 router.post('/forgot-password/verify-otp', verifyForgotPasswordOTP);
 router.post('/forgot-password/reset', resetPassword);
 // routes/userRoutes.js
+
+
+// Refresh token endpoint (public, not protected)
+router.post('/refresh-token', refreshToken);
 
 router.put('/change-password', protect, changePassword);
 
