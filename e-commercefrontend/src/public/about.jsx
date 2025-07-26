@@ -21,9 +21,9 @@ const About = () => {
           className="w-full md:w-1/2 rounded-lg object-cover shadow-md"
         />
         <div className="md:w-1/2">
-          <h1 className="text-4xl md:text-5xl font-bold text-[#540b0e] mb-6">Anka Attire</h1>
+          <h1 className="text-4xl md:text-5xl font-bold text-[#540b0e] mb-6">Prashansa</h1>
           <p className="text-[1.5rem] leading-[2rem] tracking-wide font-medium">
-            Anka Attire is a modern ethnic wear brand that 
+            Prashansa is a modern ethnic wear brand that 
             celebrates timeless tradition with a
             contemporary spirit. We present a curated range of sarees, kurtis, and festive ensembles
             designed for today's woman confident, expressive, and rooted in culture. With premium
@@ -44,15 +44,15 @@ const About = () => {
         {/* Text */}
         <div className="md:w-1/2 py-30 text-[1.6rem] leading-[2rem] tracking-wide font-medium">
           <p>
-            At Anka Attire, we believe fashion is more than fabric 
+            At Prashansa, we believe fashion is more than fabric 
             it's a feeling. It's the quiet
             confidence when a woman drapes a saree,
              the connection she feels slipping into a kurti,
             and the joy of dressing for celebration. 
-            Our pieces are not just worn they are felt,lived,
-             and remembered.Rooted in heritage, yet styled for the modern soul,
+            Our pieces are not just worn they are felt, lived,
+             and remembered. Rooted in heritage, yet styled for the modern soul,
               every ensemble reflects individuality with a touch of tradition.
-               Because at Anka Attire, we don't just dress bodies  we adorn
+               Because at Prashansa, we don't just dress bodies—we adorn
             stories.
             </p>
           
@@ -84,10 +84,10 @@ const About = () => {
 
       {/* Contact Info */}
       <section className="text-center py-6 text-sm text-[#3C2A1E]">
-        <p>ankaattire@gmail.com | 9862182135</p>
+        <p>prashansa@gmail.com | 9862182135</p>
         <div className="flex justify-center gap-4 mt-2 text-[#540b0e] text-lg">
-          <a href="#"><i className="fab fa-instagram"></i> @anka_attire</a>
-          <a href="#"><i className="fab fa-facebook"></i> anka.attire</a>
+          <a href="#"><i className="fab fa-instagram"></i> @prashansa</a>
+          <a href="#"><i className="fab fa-facebook"></i> prashansa</a>
         </div>
       </section>
 

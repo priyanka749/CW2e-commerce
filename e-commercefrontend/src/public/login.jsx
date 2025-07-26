@@ -15,8 +15,120 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+// Axios instance with interceptor for auto-refresh and session expiration handling
+const api = axios.create({
+  withCredentials: true,
+});
 
-import logo from '../assets/images/logo.png';
+// Add Authorization header to protected requests (not login, signup, refresh, etc.)
+api.interceptors.request.use(
+  config => {
+    // Only attach token for protected endpoints
+    const unprotected = [
+      '/api/auth/login',
+      '/api/users/login',
+      '/api/auth/admin/setup-mfa',
+      '/api/users/refresh-token',
+      '/api/admin/refresh-token',
+      '/api/users/signup',
+    ];
+    const isUnprotected = unprotected.some(path => config.url && config.url.includes(path));
+    if (!isUnprotected) {
+      // Always get the latest token from localStorage
+      const token = localStorage.getItem('token');
+      if (token) {
+        config.headers['Authorization'] = 'Bearer ' + token;
+      } else {
+        delete config.headers['Authorization'];
+      }
+    } else {
+      delete config.headers['Authorization'];
+    }
+    return config;
+  },
+  error => Promise.reject(error)
+);
+
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
+api.interceptors.response.use(
+  response => response,
+  async error => {
+    const originalRequest = error.config;
+    // Only try refresh if not already retried and error is 401/403 and not a login/refresh endpoint
+    const isLoginOrRefresh = originalRequest.url && (
+      originalRequest.url.includes('/api/auth/login') ||
+      originalRequest.url.includes('/api/users/login') ||
+      originalRequest.url.includes('/api/users/refresh-token') ||
+      originalRequest.url.includes('/api/admin/refresh-token')
+    );
+    if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry && !isLoginOrRefresh) {
+      originalRequest._retry = true;
+      if (isRefreshing) {
+        // Queue requests while refreshing
+        return new Promise(function(resolve, reject) {
+          failedQueue.push({ resolve, reject });
+        })
+          .then(token => {
+            originalRequest.headers['Authorization'] = 'Bearer ' + token;
+            return api(originalRequest);
+          })
+          .catch(err => Promise.reject(err));
+      }
+      isRefreshing = true;
+      try {
+        // Try both admin and user refresh endpoints
+        let refreshRes;
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (user && user.role === 'admin') {
+          refreshRes = await axios.post('https://localhost:3000/api/admin/refresh-token', {}, { withCredentials: true });
+        } else {
+          refreshRes = await axios.post('https://localhost:3000/api/users/refresh-token', {}, { withCredentials: true });
+        }
+        const newToken = refreshRes.data.token;
+        if (newToken) {
+          localStorage.setItem('token', newToken);
+          processQueue(null, newToken);
+          // Update Authorization header for the original request and all future requests
+          originalRequest.headers['Authorization'] = 'Bearer ' + newToken;
+          // Also update default headers for the api instance
+          api.defaults.headers.common['Authorization'] = 'Bearer ' + newToken;
+          return api(originalRequest);
+        } else {
+          processQueue('No token', null);
+          // Redirect to login if no token
+          localStorage.clear();
+          window.location.href = '/login';
+          return Promise.reject(error);
+        }
+      } catch (refreshErr) {
+        processQueue(refreshErr, null);
+        // Clear session and redirect to login
+        localStorage.clear();
+        window.location.href = '/login';
+        return Promise.reject(refreshErr);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+    // If not handled, just reject
+    return Promise.reject(error);
+  }
+);
+
+import logo from '../assets/images/logoo.png';
 import signupDefault from '../assets/images/signup.png';
 import signup1 from '../assets/images/signup1.png';
 import signup2 from '../assets/images/signup2.jpg';
@@ -118,39 +230,81 @@ const Login = () => {
     }
 
     try {
-      const res = await axios.post('https://localhost:3000/api/users/login', form, { withCredentials: true });
-
-      if (!res.data.user) {
-        setBackendError('Login response missing user data.');
-        toast.error('Login failed: No user data returned.');
-        return;
+      // Try admin login first (step 1: no MFA)
+      let adminRes;
+      try {
+        adminRes = await api.post('https://localhost:3000/api/auth/login', {
+          email: form.email,
+          password: form.password
+        });
+      } catch (adminErr) {
+        // If admin login fails with 400/401/403, try user login
+        if (
+          adminErr.response &&
+          (adminErr.response.status === 400 ||
+            adminErr.response.status === 401 ||
+            adminErr.response.status === 403)
+        ) {
+          // Try user login
+          try {
+            const userRes = await api.post('https://localhost:3000/api/users/login', form);
+            if (userRes.data.user && userRes.data.user.role === 'user') {
+              localStorage.setItem('user', JSON.stringify(userRes.data.user));
+              localStorage.setItem('userId', userRes.data.user._id);
+              localStorage.setItem('token', userRes.data.token);
+              toast.success('Login successful!');
+              navigate('/home');
+              return;
+            } else {
+              setBackendError('Invalid credentials or user role.');
+              toast.error('Invalid credentials or user role.');
+              return;
+            }
+          } catch (userErr) {
+            const msg = userErr.response?.data?.message || 'Login failed';
+            setBackendError(msg);
+            toast.error(msg);
+            return;
+          }
+        } else {
+          // Other admin login errors
+          const msg = adminErr.response?.data?.message || 'Login failed';
+          setBackendError(msg);
+          toast.error(msg);
+          return;
+        }
       }
 
-      // Save token and user info
-      localStorage.setItem('user', JSON.stringify(res.data.user));
-      localStorage.setItem('userId', res.data.user._id);
-
-      if (res.data.user.role === 'admin') {
-        // Check if admin already has MFA set up using localStorage
-        const mfaSetupKey = `mfa_setup_${res.data.user._id}`;
+      // If admin login requires MFA
+      if (adminRes && adminRes.data && adminRes.data.requireMFA && adminRes.data.admin && adminRes.data.admin.role === 'admin') {
+        localStorage.setItem('user', JSON.stringify(adminRes.data.admin));
+        localStorage.setItem('userId', adminRes.data.admin._id);
+        // Do NOT save token yet, wait for MFA
+        const mfaSetupKey = `mfa_setup_${adminRes.data.admin._id}`;
         const hasMFASetup = localStorage.getItem(mfaSetupKey) === 'true';
-
-        // Show MFA modal, don't navigate yet
-        setPendingAdmin({ email: form.email, userId: res.data.user._id });
-        setIsInitialMFASetup(!hasMFASetup); // Only show QR if MFA not set up
+        setPendingAdmin({ email: form.email, userId: adminRes.data.admin._id });
+        setIsInitialMFASetup(!hasMFASetup);
         setShowMFAModal(true);
-
         if (hasMFASetup) {
           toast.success('Password verified! Enter your MFA code.');
         } else {
           toast.success('Password verified! Set up MFA by scanning the QR code, then enter the code.');
         }
-      } else {
-        // User login (no MFA)
-        localStorage.setItem('token', res.data.token);
-        toast.success('Login successful!');
-        navigate('/home');
+        return;
       }
+      // If admin login returns token directly (MFA already done)
+      if (adminRes && adminRes.data && adminRes.data.token && adminRes.data.admin && adminRes.data.admin.role === 'admin') {
+        localStorage.setItem('user', JSON.stringify(adminRes.data.admin));
+        localStorage.setItem('userId', adminRes.data.admin._id);
+        localStorage.setItem('token', adminRes.data.token);
+        toast.success('Admin login successful!');
+        navigate('/admin/dashboard');
+        return;
+      }
+
+      // If neither, show error
+      setBackendError('Invalid credentials or user role.');
+      toast.error('Invalid credentials or user role.');
     } catch (err) {
       const msg = err.response?.data?.message || 'Login failed';
       setBackendError(msg);
@@ -167,25 +321,27 @@ const Login = () => {
       return;
     }
     try {
-      const res = await axios.post('https://localhost:3000/api/auth/login', {
+      // Only for admin MFA verification (step 2)
+      const res = await api.post('https://localhost:3000/api/auth/login', {
         email: form.email,
         password: form.password,
         mfaCode: mfaCode,
       });
-      localStorage.setItem('token', res.data.token);
-
-      // Mark MFA as set up for this admin user
+      if (res.data.token && res.data.admin && res.data.admin.role === 'admin') {
+        localStorage.setItem('token', res.data.token);
+        toast.success('Admin login successful!');
+        setShowMFAModal(false);
+        setMfaCode('');
+        setPendingAdmin(null);
+        setIsInitialMFASetup(false);
+        navigate('/admin/dashboard');
+      } else {
+        setMfaError(res.data.message || 'Invalid MFA code');
+      }
       if (pendingAdmin && pendingAdmin.userId) {
         const mfaSetupKey = `mfa_setup_${pendingAdmin.userId}`;
         localStorage.setItem(mfaSetupKey, 'true');
       }
-
-      toast.success('Admin login successful!');
-      setShowMFAModal(false);
-      setMfaCode('');
-      setPendingAdmin(null);
-      setIsInitialMFASetup(false);
-      navigate('/admin/dashboard');
     } catch (err) {
       setMfaError(err.response?.data?.message || 'Invalid MFA code');
     }
@@ -216,7 +372,7 @@ const Login = () => {
               className="h-14 w-14 rounded-full object-contain cursor-pointer"
               onClick={() => navigate('/home')}
             />
-            <h1 className="text-xl sm:text-2xl font-semibold text-[#540b0e]">Anka Attire</h1>
+            <h1 className="text-xl sm:text-2xl font-semibold text-[#540b0e]"></h1>
           </div>
         </div>
         {/* Left Form Section */}

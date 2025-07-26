@@ -26,6 +26,7 @@ const navItems = [
   { label: 'Account Details', icon: <FaUserCircle /> },
   { label: 'My Orders', icon: <FaBoxOpen /> },
   { label: 'Change Password', icon: <FaUserEdit /> },
+  { label: 'Active Sessions', icon: <FaBoxOpen /> },
   { label: 'Log Out', icon: <FaSignOutAlt /> },
 ];
 
@@ -39,12 +40,80 @@ const Profile = () => {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
+  const [sessions, setSessions] = useState([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [sessionsError, setSessionsError] = useState('');
+  const [logoutAllSuccess, setLogoutAllSuccess] = useState('');
+  useEffect(() => {
+    if (active === 'Active Sessions') {
+      setSessionsLoading(true);
+      setSessionsError('');
+      setLogoutAllSuccess('');
+      // Always call /api/users/sessions, never append any id
+      fetch(`${BASE_URL}/api/users/sessions`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+        credentials: 'include',
+      })
+        .then(async (res) => {
+          // If response is not JSON, show error
+          let data;
+          try {
+            data = await res.json();
+          } catch {
+            setSessions([]);
+            setSessionsError('Failed to fetch sessions');
+            setSessionsLoading(false);
+            return;
+          }
+          if (Array.isArray(data)) {
+            setSessions(data);
+          } else {
+            setSessions([]);
+            setSessionsError(data.message || 'Failed to fetch sessions');
+          }
+          setSessionsLoading(false);
+        })
+        .catch(() => {
+          setSessions([]);
+          setSessionsError('Failed to fetch sessions');
+          setSessionsLoading(false);
+        });
+    }
+  }, [active]);
+
+  const handleLogoutAllDevices = async () => {
+    setSessionsLoading(true);
+    setLogoutAllSuccess('');
+    setSessionsError('');
+    try {
+      const res = await fetch(`${BASE_URL}/api/users/logout-all`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setLogoutAllSuccess(data.message || 'Logged out from all devices');
+        setSessions([]);
+      } else {
+        setSessionsError(data.message || 'Failed to logout from all devices');
+      }
+    } catch (err) {
+      setSessionsError('Failed to logout from all devices');
+    }
+    setSessionsLoading(false);
+  };
   const [passwords, setPasswords] = useState({
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
   });
   const [pwError, setPwError] = useState('');
+  const [newPwFieldError, setNewPwFieldError] = useState('');
   const [pwSuccess, setPwSuccess] = useState('');
 
   useEffect(() => {
@@ -177,9 +246,16 @@ const Profile = () => {
   };
 
   const handlePasswordInput = (e) => {
-    setPasswords({ ...passwords, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setPasswords({ ...passwords, [name]: value });
     setPwError('');
     setPwSuccess('');
+    // Inline error for new password field
+    if (name === 'newPassword' && value === passwords.currentPassword) {
+      setNewPwFieldError('New password cannot be the same as current password. Please choose a different password.');
+    } else {
+      setNewPwFieldError('');
+    }
   };
 
   const handlePasswordChange = async (e) => {
@@ -187,6 +263,10 @@ const Profile = () => {
     setPwError('');
     setPwSuccess('');
     const { currentPassword, newPassword, confirmPassword } = passwords;
+    if (newPassword === currentPassword) {
+      setNewPwFieldError('New password cannot be the same as current password. Please choose a different password.');
+      return;
+    }
     if (newPassword !== confirmPassword) {
       setPwError("New passwords don't match.");
       return;
@@ -205,15 +285,23 @@ const Profile = () => {
         body: JSON.stringify({ currentPassword, newPassword }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Password update failed');
-      setPwSuccess('Password updated successfully!');
+      if (!res.ok) {
+        // Show specific backend error messages for password expiration/reuse
+        if (data.message) {
+          setPwError(data.message);
+        } else {
+          setPwError('Password update failed');
+        }
+        return;
+      }
+      setPwSuccess(data.message || 'Password updated successfully!');
       setPasswords({
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
       });
     } catch (err) {
-      setPwError(err.message);
+      setPwError(err.message || 'Password update failed');
     }
   };
 
@@ -352,6 +440,10 @@ const Profile = () => {
         </div>
       </div>
       {pwError && <p className="text-sm text-red-600 mt-2">{pwError}</p>}
+      {/* Inline error for new password field */}
+      {newPwFieldError && (
+        <p className="text-sm text-red-600 mt-1">{newPwFieldError}</p>
+      )}
       {pwSuccess && <p className="text-sm text-green-600 mt-2">{pwSuccess}</p>}
       <button
         type="submit"
@@ -360,6 +452,45 @@ const Profile = () => {
         Update Password
       </button>
     </form>
+  ) : active === 'Active Sessions' ? (
+    <div className="w-full max-w-lg mx-auto bg-[#fff7ec] p-6 rounded-3xl shadow">
+      <h2 className="text-xl font-bold mb-4 text-[#540b0e]">Active Sessions / Devices</h2>
+      {sessionsLoading ? (
+        <p className="text-lg text-[#540b0e]">Loading sessions...</p>
+      ) : sessionsError ? (
+        <p className="text-red-600">{sessionsError}</p>
+      ) : (
+        <>
+          {sessions.length === 0 ? (
+            <p className="text-gray-600">No active sessions found.</p>
+          ) : (
+            <div className="space-y-3 max-h-[350px] overflow-y-auto">
+              {sessions.map((session) => (
+                <div key={session._id} className="border border-[#e2c799] p-3 rounded-xl shadow bg-white">
+                  <p className="text-[#6B4E2F] text-sm">
+                    <strong>Device:</strong> {session.userAgent || 'Unknown'}
+                  </p>
+                  <p className="text-[#6B4E2F] text-sm">
+                    <strong>IP:</strong> {session.ip || 'N/A'}
+                  </p>
+                  <p className="text-[#6B4E2F] text-sm">
+                    <strong>Last Active:</strong> {session.lastActive ? new Date(session.lastActive).toLocaleString() : 'N/A'}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+          <button
+            onClick={handleLogoutAllDevices}
+            className="mt-6 bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-full font-semibold shadow"
+            disabled={sessionsLoading}
+          >
+            Logout from All Devices
+          </button>
+          {logoutAllSuccess && <p className="text-green-600 mt-3">{logoutAllSuccess}</p>}
+        </>
+      )}
+    </div>
   ) : !edit ? (
     <div className="w-full max-3w-md mx-auto bg-[#fff7ec] p-8 rounded-3xl shadow-lg text-center flex flex-col items-center justify-center">
       <div className="relative -mt-20">
