@@ -58,7 +58,8 @@ connectDB();
 const app = express();
 
 const corsOptions = {
-  origin: ["http://localhost:5173", "https://localhost:5173"],
+  origin: ["http://localhost:5173", "https://localhost:5173",
+    "https://192.168.10.103:5173"],
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   credentials: true,
   allowedHeaders: ["Content-Type", "Authorization"],
@@ -97,6 +98,10 @@ app.use('/api/sales', saleRoutes); // ✅ Sale routes
 // ✅ Sale routes
 app.use('/api/reviews', reviewRoute); // ✅ Review routes
 
+app.get('/', (req, res) => {
+  res.send('API Server is running!');
+});
+
 const PORT = 3000;
 const HTTPS_PORT = 3000; // Default HTTPS port
 
@@ -108,12 +113,24 @@ if (httpsEnabled && httpsOptions) {
   });
 }
 
-// Always start HTTP server
 app.listen(PORT, () => {
-  // console.log(`🚀 Server running at http://localhost:${PORT}`);
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
   if (httpsEnabled) {
     console.log(`   HTTPS available at https://localhost:${HTTPS_PORT}`);
   } else {
     console.log('   HTTPS not configured. Run `npm run generate-cert` to enable HTTPS.');
   }
+  
 });
+
+// if (httpsEnabled && httpsOptions) {
+//   https.createServer(httpsOptions, app).listen(HTTPS_PORT, '0.0.0.0', () => {
+//     console.log(`🚀 HTTPS Server running at https://0.0.0.0:${HTTPS_PORT}`);
+//   });
+// }
+
+// // If you want to also run HTTP (optional):
+// app.listen(PORT, '0.0.0.0', () => {
+//   console.log(`🚀 HTTP Server running at http://0.0.0.0:${PORT}`);
+// });
+

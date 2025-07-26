@@ -202,6 +202,9 @@ exports.addToCart = async (req, res) => {
     }
 
     await cart.save();
+    // Audit log for add to cart
+    const logAudit = require('../utils/auditLogger');
+    logAudit('ADD_TO_CART', userId, `Product: ${productId}, Qty: ${qty}, Color: ${color}, Size: ${sizeToUse}`);
     res.json({ success: true, cart });
   } catch (err) {
     console.error(err);
@@ -251,6 +254,9 @@ exports.removeFromCart = async (req, res) => {
     );
 
     await cart.save();
+    // Audit log for remove from cart
+    const logAudit = require('../utils/auditLogger');
+    logAudit('REMOVE_FROM_CART', userId, `Product: ${productId}, Color: ${color}, Size: ${size}`);
     res.json({ success: true, cart });
   } catch (err) {
     console.error(err);
@@ -300,6 +306,9 @@ exports.updateCartQty = async (req, res) => {
     if (item) {
       item.qty = qty;
       await cart.save();
+      // Audit log for update cart quantity
+      const logAudit = require('../utils/auditLogger');
+      logAudit('UPDATE_CART_QTY', userId, `Product: ${productId}, Qty: ${qty}, Color: ${color}, Size: ${size}`);
       res.json({ success: true, cart });
     } else {
       res.status(404).json({ success: false, message: 'Item not found in cart' });

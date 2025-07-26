@@ -44,8 +44,8 @@ exports.setupAdminMFA = async (req, res) => {
 exports.loginAdmin = async (req, res) => {
   console.log('Admin login endpoint called');
   const { email, password, mfaCode } = req.body;
-  if (!email || !password || !mfaCode) {
-    return res.status(400).json({ message: "Email, password, and MFA code are required." });
+  if (!email || !password) {
+    return res.status(400).json({ message: "Email and password are required." });
   }
 
   try {
@@ -68,30 +68,24 @@ exports.loginAdmin = async (req, res) => {
       await admin.save();
       return res.status(401).json({ message: "Invalid credentials." });
     }
-    // MFA verification
-    if (!admin.mfaSecret) {
-      console.log('No MFA secret found for admin:', admin.email);
-      return res.status(403).json({ message: "MFA not set up for this admin." });
+    // If no mfaCode, prompt for MFA if needed
+    if (!mfaCode) {
+      if (!admin.mfaSecret) {
+        return res.status(403).json({ message: "MFA not set up for this admin." });
+      }
+      return res.status(200).json({
+        requireMFA: true,
+        admin: { email: admin.email, role: admin.role, _id: admin._id }
+      });
     }
-    console.log('Verifying MFA code:', {
-      secret: admin.mfaSecret,
-      token: mfaCode,
-      time: new Date().toISOString(),
-      adminEmail: admin.email
-    });
+    // MFA verification
     const verified = speakeasy.totp.verify({
       secret: admin.mfaSecret,
       encoding: 'base32',
       token: mfaCode,
-      window: 1 // Accept codes from previous/next time window for tolerance
+      window: 1
     });
     if (!verified) {
-      console.log('MFA verification failed:', {
-        secret: admin.mfaSecret,
-        token: mfaCode,
-        time: new Date().toISOString(),
-        adminEmail: admin.email
-      });
       return res.status(401).json({ message: "Invalid MFA code." });
     }
     // Reset failed attempts on successful login

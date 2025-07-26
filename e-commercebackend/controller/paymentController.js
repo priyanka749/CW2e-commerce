@@ -57,6 +57,9 @@ product_details: products.map(p => ({
     );
 
     const { pidx, payment_url } = khaltiRes.data;
+    // Audit log for payment initiation
+    const logAudit = require('../utils/auditLogger');
+    logAudit('PAYMENT_INITIATED', userId, `Amount: ${amount}, Products: ${JSON.stringify(products)}`);
     return res.status(200).json({ success: true, pidx, payment_url });
   } catch (err) {
     console.error(err?.response?.data || err.message);
@@ -107,6 +110,9 @@ const result = await Cart.updateOne(
   { $set: { items: [] } }
 );
 console.log('Cart clear result:', result);
+// Audit log for payment verification
+const logAudit = require('../utils/auditLogger');
+logAudit('PAYMENT_VERIFIED', userId, `OrderId: ${newOrder._id}, Amount: ${amount}, Products: ${JSON.stringify(products)}`);
       // 🔽 Reduce Stock for Each Product
       for (const item of products) {
         await reduceStock(item.productId, item.size, item.quantity);
@@ -187,7 +193,9 @@ exports.deleteOrder = async (req, res) => {
     }
 
     await order.deleteOne();
-
+    // Audit log for order deletion
+    const logAudit = require('../utils/auditLogger');
+    logAudit('ORDER_DELETED', order.userId, `OrderId: ${orderId}`);
     res.status(200).json({ success: true, message: 'Order deleted successfully' });
   } catch (err) {
     console.error(err.message);

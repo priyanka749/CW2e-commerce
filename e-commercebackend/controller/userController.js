@@ -1,8 +1,24 @@
+// Example: Audit logging for adding to cart
+exports.addToCart = async (req, res) => {
+  // ...existing logic to add item to cart...
+  const userId = req.user._id || req.user.id || 'unknown';
+  logAudit('ADD_TO_CART', userId, `Product: ${req.body.productId}, Quantity: ${req.body.quantity}`);
+  res.status(200).json({ message: 'Item added to cart' });
+};
+// Example: Audit logging for payment
+exports.makePayment = async (req, res) => {
+  // ...existing logic to process payment...
+  const userId = req.user._id || req.user.id || 'unknown';
+  logAudit('PAYMENT', userId, `Amount: ${req.body.amount}, Method: ${req.body.method}`);
+  res.status(200).json({ message: 'Payment successful' });
+};
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const sendOTP = require('../utils/sendOtp');
 const mongoose = require('mongoose');
+const logAudit = require('../utils/auditLogger');
+const Session = require('../models/session');
 
 
 // // User Registration
@@ -98,10 +114,17 @@ exports.loginUser = async (req, res) => {
   const cleanEmail = email.trim().toLowerCase();
   try {
     const user = await User.findOne({ email: cleanEmail });
-    if (!user) return res.status(400).json({ message: "User not found" });
-    if (!user.isVerified) return res.status(403).json({ message: "User not verified" });
+    if (!user) {
+      logAudit('LOGIN_FAILED', 'unknown', 'Reason: User not found');
+      return res.status(400).json({ message: "User not found" });
+    }
+    if (!user.isVerified) {
+      logAudit('LOGIN_FAILED', user._id, 'Reason: User not verified');
+      return res.status(403).json({ message: "User not verified" });
+    }
     // Account lockout logic
     if (user.lockUntil && user.lockUntil > Date.now()) {
+      logAudit('LOGIN_FAILED', user._id, 'Reason: Account locked');
       return res.status(403).json({ message: "Account is temporarily locked due to multiple failed login attempts. Try again later." });
     }
     const match = await bcrypt.compare(password, user.password);
@@ -111,19 +134,66 @@ exports.loginUser = async (req, res) => {
         user.lockUntil = Date.now() + 15 * 60 * 1000;
       }
       await user.save();
+      // Log failed login attempt
+      logAudit('LOGIN_FAILED', user._id, 'Reason: Incorrect password');
       return res.status(400).json({ message: "Incorrect password" });
     }
     // Reset failed attempts on successful login
     user.failedLoginAttempts = 0;
     user.lockUntil = undefined;
     await user.save();
-    const token = jwt.sign({ id: user._id, role: user.role }, "supersecret", { expiresIn: '7d' });
+    // Generate access and refresh tokens
+    const accessToken = jwt.sign({ userId: user._id, role: user.role }, "supersecret", { expiresIn: '15m' });
+    const refreshToken = jwt.sign({ userId: user._id, role: user.role }, "refreshsecret", { expiresIn: '7d' });
+    // Set refresh token as HTTP-only cookie
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: true, // set to true for HTTPS
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
     req.session.userId = user._id; // Save user ID in session
-    res.status(200).json({ token, user });
+    // Log successful login
+    logAudit('LOGIN_SUCCESS', user._id);
+    // Create session record
+    const session = new Session({
+      userId: user._id,
+      sessionId: req.sessionID || accessToken,
+      userAgent: req.headers['user-agent'],
+      ip: req.ip,
+      lastActive: new Date(),
+      isValid: true
+    });
+    await session.save();
+    res.status(200).json({ token: accessToken, user });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 }
+
+// List active sessions/devices for user
+exports.listSessions = async (req, res) => {
+  try {
+    const sessions = await Session.find({ userId: req.user._id, isValid: true })
+      .sort({ lastActive: -1 })
+      .limit(5); // Show up to 5 most recent devices
+    res.status(200).json(sessions);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Logout from all devices
+exports.logoutAllDevices = async (req, res) => {
+  try {
+    await Session.updateMany({ userId: req.user._id }, { isValid: false });
+    // Optionally destroy all server-side sessions if using session store
+    logAudit('LOGOUT_ALL_DEVICES', req.user._id);
+    res.status(200).json({ message: 'Logged out from all devices' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 
 // Get User by ID (protected route)
 const Location = require('../models/location');
@@ -273,26 +343,57 @@ exports.updateProfile = async (req, res) => {
   }
 };
 
-// controllers/userController.js
+
 exports.changePassword = async (req, res) => {
   const user = await User.findById(req.user.id);
   const { currentPassword, newPassword } = req.body;
 
-
+  // Check current password
   const isMatch = await bcrypt.compare(currentPassword, user.password);
   if (!isMatch) return res.status(400).json({ message: 'Incorrect current password' });
 
-  user.password = await bcrypt.hash(newPassword, 10);
+
+  const maxAge = 90 * 24 * 60 * 60 * 1000; // 90 days in ms
+  if (user.passwordLastChanged && Date.now() - user.passwordLastChanged.getTime() < maxAge) {
+    
+  }
+
+  // Check password reuse (last 5 passwords)
+  let reused = false;
+  if (user.passwordHistory && user.passwordHistory.length > 0) {
+    for (const oldHash of user.passwordHistory) {
+      if (await bcrypt.compare(newPassword, oldHash)) {
+        reused = true;
+        break;
+      }
+    }
+  }
+  if (reused) {
+    return res.status(400).json({ message: 'Cannot reuse previous passwords.' });
+  }
+
+  // Hash new password
+  const newHash = await bcrypt.hash(newPassword, 10);
+  user.password = newHash;
+  user.passwordLastChanged = Date.now();
+  // Add to history, keep last 5
+  user.passwordHistory = user.passwordHistory || [];
+  user.passwordHistory.push(newHash);
+  if (user.passwordHistory.length > 5) user.passwordHistory = user.passwordHistory.slice(-5);
   await user.save();
+  // Log password change
+  logAudit('PASSWORD_CHANGE', user._id);
   res.json({ message: 'Password updated successfully' });
 };
 
 // Logout User
 exports.logoutUser = (req, res) => {
+  const userId = req.session.userId || 'unknown';
   req.session.destroy(err => {
     if (err) {
       return res.status(500).json({ message: 'Logout failed' });
     }
+    logAudit('LOGOUT', userId);
     console.log('User logged out and session destroyed');
     res.status(200).json({ message: 'Logged out successfully' });
   });
