@@ -1,8 +1,8 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
 import fs from 'fs';
 import path from 'path';
+import { defineConfig } from 'vite';
 
 // To use HTTPS, generate certificates with:
 // mkdir cert
@@ -11,6 +11,7 @@ import path from 'path';
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
+      // host: '0.0.0.0',
     https: {
       key: fs.readFileSync(path.resolve(__dirname, 'cert/localhost-key.pem')),
       cert: fs.readFileSync(path.resolve(__dirname, 'cert/localhost.pem')),
