@@ -1,3 +1,19 @@
+// Refresh token endpoint for user: verifies refresh token from cookie and issues new access token
+exports.refreshToken = (req, res) => {
+  const token = req.cookies && req.cookies.refreshToken;
+  if (!token) return res.status(401).json({ message: 'No refresh token' });
+  try {
+    const decoded = jwt.verify(token, "refreshsecret");
+    const newAccessToken = jwt.sign(
+      { userId: decoded.userId, role: decoded.role },
+      "supersecret",
+      { expiresIn: '15m' }
+    );
+    res.json({ token: newAccessToken });
+  } catch (err) {
+    return res.status(403).json({ message: 'Invalid refresh token' });
+  }
+};
 const jwt = require('jsonwebtoken');
 const User = require('../models/user'); // Make sure the path is correct
 require('dotenv').config();

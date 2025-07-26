@@ -16,12 +16,15 @@ const {
   verifyForgotPasswordOTP,
   resetPassword,
   changePassword,
-  logoutUser
+  logoutUser,
+  listSessions,
+  logoutAllDevices
 } = userController;
 
 // ✅ Routes
 router.post('/register', registerUser);
 router.post('/verify-otp', verifyOTP);
+// Do NOT protect login route
 router.post('/login', loginUser);
 router.get('/all', protect, getAllUsers); // Get all users (protected admin route)
 
@@ -38,7 +41,13 @@ router.get('/profile', protect, (req, res) => {
   res.json({ user: req.user });
 });
 
-// Place this AFTER /profile routes!
+// List active sessions/devices
+router.get('/sessions', protect, listSessions);
+
+// Logout from all devices
+router.post('/logout-all', protect, logoutAllDevices);
+
+// Place this AFTER /sessions and /logout-all!
 router.get('/:id', getUser);
 
 router.post('/logout', logoutUser);
@@ -48,6 +57,5 @@ router.post('/forgot-password/reset', resetPassword);
 // routes/userRoutes.js
 
 router.put('/change-password', protect, changePassword);
-
 
 module.exports = router;
