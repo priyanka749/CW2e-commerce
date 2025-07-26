@@ -62,7 +62,7 @@ const NewArrivals = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const res = await fetch('httpss://localhost:3000/api/products');
+      const res = await fetch('https://localhost:3000/api/products');
       const data = await res.json();
       setProducts(Array.isArray(data) ? data : []);
     } catch (err) {

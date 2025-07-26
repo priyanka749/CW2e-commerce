@@ -187,7 +187,7 @@ const Signup = () => {
         <div className="w-full flex items-center px-6 pt-1 md:absolute md:top-2 md:left-0 z-10">
           <div className="flex items-center gap-4">
             <img src={logo} alt="Logo" className="h-14 w-14 rounded-full object-contain cursor-pointer" onClick={() => navigate('/home')} />
-            <h1 className="text-xl sm:text-2xl font-semibold text-[#540b0e]">Anka Attire</h1>
+            <h1 className="text-xl sm:text-2xl font-semibold text-[#540b0e]"></h1>
           </div>
         </div>
 
