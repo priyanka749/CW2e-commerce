@@ -1,3 +1,5 @@
+// XSS protection
+const xss = require('xss-clean');
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -80,6 +82,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use(xss()); // Protect against XSS
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 app.use(cookieParser());

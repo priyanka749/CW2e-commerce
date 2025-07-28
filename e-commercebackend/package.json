@@ -30,7 +30,8 @@
     "qrcode": "^1.5.4",
     "selfsigned": "^2.4.1",
     "speakeasy": "^2.0.0",
-    "string-similarity": "^4.0.4"
+    "string-similarity": "^4.0.4",
+    "xss-clean": "^0.1.4"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
