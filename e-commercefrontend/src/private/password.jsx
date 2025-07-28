@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useCsrf } from '../public/CsrfProvider';
 
 const BASE_URL = "https://localhost:3000";
 
@@ -19,6 +20,7 @@ const PasswordChange = () => {
     setPwSuccess('');
   };
 
+  const { csrfToken } = useCsrf();
   const handlePasswordChange = async (e) => {
     e.preventDefault();
     setPwError('');
@@ -38,6 +40,7 @@ const PasswordChange = () => {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('token')}`,
+          'X-CSRF-Token': csrfToken,
         },
         body: JSON.stringify({ currentPassword, newPassword }),
       });

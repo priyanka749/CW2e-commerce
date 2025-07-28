@@ -6,10 +6,12 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Footer from '../components/footer';
 import Navbar from '../components/nav';
+import { useCsrf } from '../public/CsrfProvider';
 
 const BASE_URL = 'https://localhost:3000';
 
 const Favourite = () => {
+  const { csrfToken } = useCsrf();
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -108,6 +110,7 @@ const Favourite = () => {
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
+            'X-CSRF-Token': csrfToken,
           },
         }
       );
@@ -141,6 +144,7 @@ const Favourite = () => {
         {
           headers: {
             Authorization: `Bearer ${token}`,
+            'X-CSRF-Token': csrfToken,
           },
         }
       );

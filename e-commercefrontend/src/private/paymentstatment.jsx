@@ -1,19 +1,14 @@
-import axios from "axios";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
+import { useCsrf } from '../public/CsrfProvider';
 
 const PaymentManagement = () => {
   const [orders, setOrders] = useState([]);
 
+  const { api } = useCsrf();
   const fetchOrders = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get("https://localhost:3000/api/payments/orders", {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const res = await api.get("https://localhost:3000/api/payments/orders");
       setOrders(res.data);
     } catch (err) {
       console.error(err);
@@ -26,13 +21,7 @@ const PaymentManagement = () => {
     if (!confirmed) return;
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`https://localhost:3000/api/payments/orders/${orderId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      await api.delete(`https://localhost:3000/api/payments/orders/${orderId}`);
       toast.success("Order deleted successfully");
       fetchOrders();
     } catch (err) {

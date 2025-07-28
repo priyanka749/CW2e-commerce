@@ -3,6 +3,7 @@ const router = express.Router();
 const userController = require('../controller/userController');
 const upload = require('../middleware/upload');
 const { protect, refreshToken } = require('../middleware/auth');
+const { body } = require('express-validator');
 
 // ✅ Destructure functions from controller
 const {
@@ -22,17 +23,42 @@ const {
 } = userController;
 
 // ✅ Routes
-router.post('/register', registerUser);
+router.post(
+  '/register',
+  [
+    body('email').isEmail().normalizeEmail(),
+    body('password').isLength({ min: 8 }),
+    body('fullName').isString().trim().notEmpty(),
+    // Add more validators as needed
+  ],
+  registerUser
+);
 router.post('/verify-otp', verifyOTP);
 // Do NOT protect login route
-router.post('/login', loginUser);
+router.post(
+  '/login',
+  [
+    body('email').isEmail().normalizeEmail(),
+    body('password').isString().notEmpty(),
+  ],
+  loginUser
+);
 router.get('/all', protect, getAllUsers); // Get all users (protected admin route)
 
 // ✅ Update profile (with image upload)
+
+// Update profile (with image upload and validation)
 router.put(
   '/profile',
   protect,
   upload.single('image'),
+  [
+    body('fullName').optional().isString().trim().escape(),
+    body('email').optional().isEmail().normalizeEmail(),
+    body('address').optional().isString().trim().escape(),
+    body('phone').optional().isString().trim().escape(),
+    // Add more validators as needed
+  ],
   updateProfile
 );
 
@@ -47,8 +73,10 @@ router.get('/sessions', protect, listSessions);
 // Logout from all devices
 router.post('/logout-all', protect, logoutAllDevices);
 
-// Place this AFTER /sessions and /logout-all!
-router.get('/:id', getUser);
+
+// Get user by ID with validation (NoSQL injection protection)
+const { param } = require('express-validator');
+router.get('/:id', [param('id').isMongoId()], getUser);
 
 router.post('/logout', logoutUser);
 router.post('/forgot-password/send-otp', sendForgotPasswordOTP);

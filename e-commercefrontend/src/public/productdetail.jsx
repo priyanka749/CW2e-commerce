@@ -23,8 +23,11 @@ const SuccessCartToast = () => (
   </div>
 );
 
+import { useCsrf } from '../public/CsrfProvider';
+
 const ProductDetail = () => {
   const navigate = useNavigate();
+  const { csrfToken } = useCsrf();
   const { id } = useParams();
 
   const [product, setProduct] = useState(null);
@@ -110,6 +113,7 @@ const ProductDetail = () => {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
+        'X-CSRF-Token': csrfToken,
       },
       body: JSON.stringify({
         productId: prod._id,
@@ -130,7 +134,10 @@ const ProductDetail = () => {
       });
 
       const res2 = await fetch('https://localhost:3000/api/cart', {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'X-CSRF-Token': csrfToken,
+        },
       });
       const cartData = await res2.json();
       if (cartData.success) {
@@ -176,6 +183,7 @@ const ProductDetail = () => {
         {
           headers: {
             Authorization: `Bearer ${token}`,
+            'X-CSRF-Token': csrfToken,
           },
         }
       );
@@ -202,6 +210,7 @@ const ProductDetail = () => {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
+        'X-CSRF-Token': csrfToken,
       },
       body: JSON.stringify({ rating: reviewRating, comment: reviewText })
     });
@@ -233,6 +242,7 @@ const ProductDetail = () => {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
+          'X-CSRF-Token': csrfToken,
         },
       });
       setAllReviews(prev => prev.filter(r => r._id !== reviewId));

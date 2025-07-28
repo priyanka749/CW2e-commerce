@@ -1,11 +1,12 @@
 import { MicrophoneIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import axios from 'axios';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import logo from '../assets/images/logo1.png';
+import { useCsrf } from './CsrfProvider';
 
 const Chatbot = () => {
+  const { api } = useCsrf();
   const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -41,10 +42,7 @@ const Chatbot = () => {
 
       // Check if user has items in cart
       try {
-        const cartResponse = await axios.get('httpss://localhost:3000/api/cart', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
+        const cartResponse = await api.get('https://localhost:3000/api/cart');
         if (cartResponse.data.success && cartResponse.data.cart.items.length > 0) {
           setPaymentContext('cart');
           return {
@@ -116,10 +114,9 @@ const Chatbot = () => {
         }
       } else {
         // Regular chat response
-        const response = await axios.post('https://localhost:3000/api/chat', {
+        const response = await api.post('https://localhost:3000/api/chat', {
           message: currentInput,
         });
-
         const botMessage = { sender: 'bot', text: response.data.reply };
         setMessages((prev) => [...prev, botMessage]);
       }
@@ -164,7 +161,7 @@ const Chatbot = () => {
                 setTimeout(() => navigate('/cart'), 2000);
               }
             } else {
-              axios.post('https://localhost:3000/api/chat', { message: transcript })
+              api.post('https://localhost:3000/api/chat', { message: transcript })
                 .then((response) => {
                   const botMessage = { sender: 'bot', text: response.data.reply };
                   setMessages((prev) => [...prev, botMessage]);

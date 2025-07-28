@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import Navbar from '../components/nav';
+import { FaHeart, FaSearch, FaStar } from 'react-icons/fa';
+import { useNavigate, useParams } from 'react-router-dom';
 import Footer from '../components/footer';
-import { FaHeart, FaStar, FaSearch } from 'react-icons/fa';
+import Navbar from '../components/nav';
+import { useCsrf } from './CsrfProvider';
 
 const BASE_URL = 'https://localhost:3000';
 
 const CategoryPage = () => {
+  const { api } = useCsrf();
   const { categoryName } = useParams();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,10 +24,8 @@ const CategoryPage = () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${BASE_URL}/api/products?category=${encodeURIComponent(categoryName)}`);
-        if (!res.ok) throw new Error('Failed to fetch products');
-        const data = await res.json();
-        setProducts(data);
+        const res = await api.get(`${BASE_URL}/api/products?category=${encodeURIComponent(categoryName)}`);
+        setProducts(res.data);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -33,17 +33,14 @@ const CategoryPage = () => {
       }
     };
     fetchProducts();
-  }, [categoryName]);
+  }, [categoryName, api]);
 
   useEffect(() => {
     if (user && token) {
-      fetch(`${BASE_URL}/api/users/${user._id}/favorites`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-        .then(res => res.json())
-        .then(data => setFavorites(data.map(p => p._id)));
+      api.get(`${BASE_URL}/api/users/${user._id}/favorites`)
+        .then(res => setFavorites(res.data.map(p => p._id)));
     }
-  }, [user, token]);
+  }, [user, token, api]);
 
   const filteredProducts =
     categoryName && categoryName.toLowerCase() === 'saree'
@@ -62,17 +59,14 @@ const CategoryPage = () => {
     const url = isFav
       ? `${BASE_URL}/api/users/favorites/remove`
       : `${BASE_URL}/api/users/favorites/add`;
-    await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ productId }),
-    });
-    setFavorites((prev) =>
-      isFav ? prev.filter((id) => id !== productId) : [...prev, productId]
-    );
+    try {
+      await api.post(url, { productId });
+      setFavorites((prev) =>
+        isFav ? prev.filter((id) => id !== productId) : [...prev, productId]
+      );
+    } catch (err) {
+      // Optionally handle error
+    }
   };
 
   // Special UI for saree

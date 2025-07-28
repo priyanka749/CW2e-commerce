@@ -1,11 +1,11 @@
 import '@fortawesome/fontawesome-free/css/all.min.css';
-import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useCsrf } from './CsrfProvider';
 
-import logo from '../assets/images/logo.png';
+import logo from '../assets/images/logoo.png';
 import signupDefault from '../assets/images/signup.png';
 import signup1 from '../assets/images/signup1.png';
 import signup2 from '../assets/images/signup2.jpg';
@@ -13,6 +13,7 @@ import signup2 from '../assets/images/signup2.jpg';
 const images = [signup1, signup2, signupDefault];
 
 const Signup = () => {
+  const { csrfToken, api } = useCsrf();
   const [currentImage, setCurrentImage] = useState(0);
   const [form, setForm] = useState({
     fullName: '',
@@ -161,7 +162,7 @@ const Signup = () => {
     }
 
     try {
-      const response = await axios.post('https://localhost:3000/api/users/register', {
+      const response = await api.post('https://localhost:3000/api/users/register', {
         fullName: form.fullName,
         email: form.email,
         phone: form.phone,
@@ -169,6 +170,10 @@ const Signup = () => {
         password: form.password,
         lat: form.lat,
         lon: form.lon
+      }, {
+        headers: {
+          'X-CSRF-Token': csrfToken
+        }
       });
       toast.success("OTP sent to your email.");
       navigate('/otp', { state: { userId: response.data.userId } });

@@ -1,4 +1,4 @@
-import axios from "axios";
+
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -9,6 +9,7 @@ const Payment = () => {
   const product = state?.product;
   const amount = state?.amount;
   const products = state?.products;
+  const { api } = useCsrf();
 
   useEffect(() => {
     const initiateKhaltiPayment = async () => {
@@ -27,15 +28,14 @@ const Payment = () => {
                 name: product.name,
                 quantity: product.quantity,
                 size: product.size,
-                color: product.color, // ✅ include color if required
+                color: product.color,
               },
             ],
           };
           localStorage.setItem("khaltiTempOrder", JSON.stringify(orderData));
-          const res = await axios.post(
-            "httpss://localhost:3000/api/payments/khalti/initiate",
-            orderData,
-            { headers: { Authorization: `Bearer ${token}` } }
+          const res = await api.post(
+            "https://localhost:3000/api/payments/khalti/initiate",
+            orderData
           );
           if (res.data.success) {
             window.location.href = res.data.payment_url;
@@ -58,10 +58,9 @@ const Payment = () => {
             products,
           };
           localStorage.setItem("khaltiTempOrder", JSON.stringify(orderData));
-          const res = await axios.post(
+          const res = await api.post(
             "https://localhost:3000/api/payments/khalti/initiate",
-            orderData,
-            { headers: { Authorization: `Bearer ${token}` } }
+            orderData
           );
           if (res.data.success) {
             window.location.href = res.data.payment_url;
@@ -81,7 +80,7 @@ const Payment = () => {
     };
 
     initiateKhaltiPayment();
-  }, [product, amount, products, navigate]);
+  }, [product, amount, products, navigate, api]);
 
   return (
     <div className="h-screen flex items-center justify-center">
@@ -93,3 +92,14 @@ const Payment = () => {
 };
 
 export default Payment;
+
+//   return (
+//     <div className="h-screen flex items-center justify-center">
+//       <p className="text-lg font-semibold text-[#540b0e]">
+//         Redirecting to Khalti for payment...
+//       </p>
+//     </div>
+//   );
+// };
+
+// export default Payment;

@@ -92,6 +92,9 @@ exports.loginAdmin = async (req, res) => {
     admin.failedLoginAttempts = 0;
     admin.lockUntil = undefined;
     await admin.save();
+    // Set session for admin
+    req.session.userId = admin._id;
+    req.session.role = admin.role;
     const token = jwt.sign(
       { userId: admin._id, role: 'admin' },
       process.env.JWT_SECRET || "supersecret",
@@ -159,6 +162,7 @@ exports.logoutAdmin = async (req, res) => {
       });
     }
 
+    console.log('Admin logged out and session destroyed');
     res.status(200).json({ 
       success: true,
       message: "Admin logged out successfully",

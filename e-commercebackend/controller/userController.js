@@ -49,7 +49,13 @@ const Session = require('../models/session');
 //   }
 // };
 
+const { validationResult } = require('express-validator');
+
 exports.registerUser = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ message: errors.array().map(e => e.msg).join(', ') });
+  }
   const { fullName, email, phone, address, password, lat, lon } = req.body;
 
   try {
@@ -110,6 +116,10 @@ exports.verifyOTP = async (req, res) => {
 // controllers/userController.js
 
 exports.loginUser = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ message: errors.array().map(e => e.msg).join(', ') });
+  }
   const { email, password } = req.body;
   const cleanEmail = email.trim().toLowerCase();
   try {
@@ -146,10 +156,10 @@ exports.loginUser = async (req, res) => {
     const accessToken = jwt.sign({ userId: user._id, role: user.role }, "supersecret", { expiresIn: '15m' });
     const refreshToken = jwt.sign({ userId: user._id, role: user.role }, "refreshsecret", { expiresIn: '7d' });
     // Set refresh token as HTTP-only cookie
-   res.cookie('refreshToken', refreshToken, {
+res.cookie('refreshToken', refreshToken, {
   httpOnly: true,
-  secure: true,         // <--- MUST be true for HTTPS
-  sameSite: 'none',     // <--- MUST be 'none' for cross-site cookies with HTTPS
+  secure: true,
+  sameSite: 'none',
   maxAge: 7 * 24 * 60 * 60 * 1000
 });
     req.session.userId = user._id; // Save user ID in session

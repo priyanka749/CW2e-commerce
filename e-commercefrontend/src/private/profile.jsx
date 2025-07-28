@@ -1,14 +1,4 @@
-// User logout function
-async function handleUserLogout(navigate) {
-  await fetch('https://localhost:3000/api/users/logout', {
-    method: 'POST',
-    credentials: 'include',
-  });
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
-  localStorage.removeItem('userId');
-  navigate('/login');
-}
+// User logout function with session management
 import { useEffect, useState } from 'react';
 import {
   FaBoxOpen,
@@ -17,8 +7,40 @@ import {
   FaUserEdit
 } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import Footer from '../components/footer';
 import Navbar from '../components/nav';
+import { useCsrf } from '../public/CsrfProvider';
+async function handleUserLogout(navigate) {
+  try {
+    // Get CSRF token from context
+    const csrfToken = window.__CSRF_TOKEN__ || '';
+    const res = await fetch('https://localhost:3000/api/users/logout', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'x-csrf-token': csrfToken
+      }
+    });
+    let data = { message: '' };
+    try {
+      data = await res.json();
+    } catch (e) {
+      data = { message: 'Session expired or already logged out.' };
+    }
+    if (res.ok) {
+      toast.success(data.message || 'Logged out.');
+    } else {
+      toast.error(data.message || 'Session expired.');
+    }
+  } catch (err) {
+    toast.error('Logout failed.');
+  }
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  localStorage.removeItem('userId');
+  setTimeout(() => navigate('/login'), 1000);
+}
 
 const BASE_URL = "https://localhost:3000";
 
@@ -31,6 +53,9 @@ const navItems = [
 ];
 
 const Profile = () => {
+  const { csrfToken } = useCsrf();
+  // Expose CSRF token globally for logout function
+  window.__CSRF_TOKEN__ = csrfToken;
   const [profile, setProfile] = useState({});
   const [edit, setEdit] = useState(false);
   const [form, setForm] = useState({});
@@ -123,8 +148,8 @@ const Profile = () => {
     if (!user || !token) {
       setError('No user session found. Please log in again.');
       setTimeout(() => {
-        navigate('/login');
-      }, 1500);
+        handleUserLogout(navigate);
+      }, 1200);
       setLoading(false);
       return;
     }
@@ -137,11 +162,9 @@ const Profile = () => {
       .then((res) => {
         if (res.status === 401) {
           setError('Session expired. Please log in again.');
-          localStorage.removeItem('user');
-          localStorage.removeItem('token');
           setTimeout(() => {
-            navigate('/login');
-          }, 1500);
+            handleUserLogout(navigate);
+          }, 1200);
           return null;
         }
         return res.json();
@@ -160,6 +183,9 @@ const Profile = () => {
             setImagePreview(localUser.image ? `${BASE_URL}${localUser.image}` : '');
           } else {
             setError('Failed to load profile. Please log out and log in again.');
+            setTimeout(() => {
+              handleUserLogout(navigate);
+            }, 1200);
           }
         }
         setLoading(false);
@@ -173,6 +199,9 @@ const Profile = () => {
           setImagePreview(localUser.image ? `${BASE_URL}${localUser.image}` : '');
         } else {
           setError('Failed to fetch user. Please log out and log in again.');
+          setTimeout(() => {
+            handleUserLogout(navigate);
+          }, 1200);
         }
         setLoading(false);
       });
@@ -226,7 +255,9 @@ const Profile = () => {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
+          'x-csrf-token': csrfToken,
         },
+        credentials: 'include',
         body: formData,
       });
 

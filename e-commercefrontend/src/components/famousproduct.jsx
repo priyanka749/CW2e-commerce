@@ -219,11 +219,12 @@
 // };
 
 // export default FamousProducts;
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { FaHeart, FaStar } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { CsrfContext } from '../public/CsrfProvider';
 
 const toastStyle = {
   style: {
@@ -260,6 +261,7 @@ const FamousProducts = () => {
 
   const user = JSON.parse(localStorage.getItem('user'));
   const token = localStorage.getItem('token');
+  const { csrfToken, api } = useContext(CsrfContext);
 
   useEffect(() => {
     fetchProducts();
@@ -290,13 +292,8 @@ const FamousProducts = () => {
 
   const fetchFavorites = async () => {
     try {
-      const res = await fetch(`https://localhost:3000/api/users/favorites`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const data = await res.json();
-      setFavorites(data.favorites.map((p) => String(p._id)));
+      const res = await api.get('https://localhost:3000/api/users/favorites');
+      setFavorites(res.data.favorites.map((p) => String(p._id)));
     } catch (err) {
       console.error('Error fetching favorites:', err);
     }
@@ -312,18 +309,9 @@ const FamousProducts = () => {
       ? 'https://localhost:3000/api/favorites/remove'
       : 'https://localhost:3000/api/favorites/add';
 
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ productId }),
-    });
-
-    const data = await res.json();
-
-    if (res.ok) {
+    try {
+      const res = await api.post(url, { productId });
+      const data = res.data;
       const updatedFavorites = isFav
         ? favorites.filter((id) => id !== String(productId))
         : [...favorites, String(productId)];
@@ -336,8 +324,8 @@ const FamousProducts = () => {
         isFav ? "Removed from Favourites" : "Added to Favourites",
         toastStyle
       );
-    } else {
-      toast.error(data.message || "Failed to update favorite", toastStyle);
+    } catch (err) {
+      toast.error((err.response && err.response.data && err.response.data.message) || "Failed to update favorite", toastStyle);
     }
   };
 

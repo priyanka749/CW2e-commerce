@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { FaCheckCircle, FaHeart, FaStar, FaTimesCircle } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Footer from '../components/footer';
 import Navbar from '../components/nav';
+import { CsrfContext } from './CsrfProvider';
 
 const toastStyle = {
   style: {
@@ -76,6 +77,7 @@ const AllProducts = () => {
 
   const user = JSON.parse(localStorage.getItem('user'));
   const token = localStorage.getItem('token');
+  const { csrfToken, api } = useContext(CsrfContext);
 
   const fetchProducts = async () => {
     try {
@@ -89,13 +91,8 @@ const AllProducts = () => {
 
   const fetchFavorites = async () => {
     try {
-      const res = await fetch(`https://localhost:3000/api/users/favorites`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const data = await res.json();
-      setFavorites(data.favorites.map((p) => String(p._id)));
+      const res = await api.get('https://localhost:3000/api/users/favorites');
+      setFavorites(res.data.favorites.map((p) => String(p._id)));
     } catch (err) {
       console.error('Error fetching favorites:', err);
     }
@@ -122,39 +119,27 @@ const AllProducts = () => {
     ? 'https://localhost:3000/api/favorites/remove'
     : 'https://localhost:3000/api/favorites/add';
 
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ productId }),
-  });
-
-  const data = await res.json();
-
-  if (res.ok) {
+  try {
+    const res = await api.post(url, { productId });
+    const data = res.data;
     const updatedFavorites = isFav
       ? favorites.filter((id) => id !== String(productId))
       : [...favorites, String(productId)];
 
     setFavorites(updatedFavorites);
-
-    // 🔥 UPDATE localStorage and dispatch favoritesUpdated
     localStorage.setItem('favoritesCount', updatedFavorites.length);
     window.dispatchEvent(new Event('favoritesUpdated'));
 
-    // ✅ Toast feedback
     if (isFav) {
       toast.info("Removed from Favourites", toastStyle);
     } else {
       toast.success("Added to Favourites", toastStyle);
     }
-  } else {
-    if (data.message === "Already in favorites") {
+  } catch (err) {
+    if (err.response && err.response.data && err.response.data.message === "Already in favorites") {
       toast.success("Already in favorites", toastStyle);
     } else {
-      toast.error(data.message || "Error", toastStyle);
+      toast.error((err.response && err.response.data && err.response.data.message) || "Error", toastStyle);
     }
   }
 };
@@ -178,57 +163,58 @@ const AllProducts = () => {
       alert('Please log in to add to cart.');
       return;
     }
-    const res = await fetch('https://localhost:3000/api/cart/add', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        productId: product._id,
-        qty: 1,
-        color: null,
-        size: sizeToSend || undefined,
-      }),
-    });
-
-    const data = await res.json();
-    if (data.success) {
-      if (data.message && data.message.toLowerCase().includes('already')) {
+    try {
+      const res = await api.post(
+        'https://localhost:3000/api/cart/add',
+        {
+          productId: product._id,
+          qty: 1,
+          color: null,
+          size: sizeToSend || undefined,
+        }
+      );
+      const data = res.data;
+      if (data.success) {
+        if (data.message && data.message.toLowerCase().includes('already')) {
+          toast.info('Already added to cart!', {
+            position: "top-center",
+            autoClose: 2200,
+            toastId: "cart-already-toast",
+            ...toastStyle
+          });
+          return; // Do not update cart badge or show success toast
+        }
+        toast(<SuccessCartToast />, {
+          ...toastStyle,
+          position: "top-center",
+          autoClose: 2500,
+          closeOnClick: true,
+          hideProgressBar: false,
+          icon: false,
+        });
+        // Update cart badge, etc.
+        const res2 = await api.get('https://localhost:3000/api/cart');
+        const cartData = res2.data;
+        if (cartData.success) {
+          localStorage.setItem('cartCount', cartData.cart.items.length);
+          window.dispatchEvent(new Event('cartUpdated'));
+        }
+      } else if (data.message && data.message.toLowerCase().includes('already')) {
         toast.info('Already added to cart!', {
           position: "top-center",
           autoClose: 2200,
           toastId: "cart-already-toast",
           ...toastStyle
         });
-        return; // Do not update cart badge or show success toast
+      } else {
+        toast.error(data.message || 'Failed to add to cart', toastStyle);
       }
-      toast(<SuccessCartToast />, {
-        ...toastStyle,
-        position: "top-center",
-        autoClose: 2500,
-        closeOnClick: true,
-        hideProgressBar: false,
-        icon: false,
-      });
-      // Update cart badge, etc.
-      const res2 = await fetch('https://localhost:3000/api/cart', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const cartData = await res2.json();
-      if (cartData.success) {
-        localStorage.setItem('cartCount', cartData.cart.items.length);
-        window.dispatchEvent(new Event('cartUpdated'));
+    } catch (err) {
+      if (err.response && err.response.data && err.response.data.message) {
+        toast.error(err.response.data.message, toastStyle);
+      } else {
+        toast.error('Failed to add to cart', toastStyle);
       }
-    } else if (data.message && data.message.toLowerCase().includes('already')) {
-      toast.info('Already added to cart!', {
-        position: "top-center",
-        autoClose: 2200,
-        toastId: "cart-already-toast",
-        ...toastStyle
-      });
-    } else {
-      toast.error(data.message || 'Failed to add to cart', toastStyle);
     }
   };
 

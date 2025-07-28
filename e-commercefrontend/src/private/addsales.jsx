@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { toast } from 'react-toastify';
 import axios from 'axios';
+import { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
+import { useCsrf } from '../public/CsrfProvider';
 
 const AdminSales = () => {
+  const { csrfToken } = useCsrf();
   const [sales, setSales] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({
@@ -52,7 +54,11 @@ const AdminSales = () => {
     data.append('image', form.image);
 
     try {
-      await axios.post('https://localhost:3000/api/sales', data);
+      await axios.post('https://localhost:3000/api/sales', data, {
+        headers: {
+          'X-CSRF-Token': csrfToken
+        }
+      });
       toast.success('Sale product added');
       setShowModal(false);
       setForm({ title: '', price: '', originalPrice: '', description: '', colors: '', sizes: '', image: null });
@@ -66,7 +72,11 @@ const AdminSales = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this sale product?')) return;
     try {
-      await axios.delete(`https://localhost:3000/api/sales/${id}`);
+      await axios.delete(`https://localhost:3000/api/sales/${id}`, {
+        headers: {
+          'X-CSRF-Token': csrfToken
+        }
+      });
       toast.success('Sale product deleted');
       fetchSales();
     } catch (err) {

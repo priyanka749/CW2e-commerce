@@ -6,6 +6,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Footer from '../components/footer';
 import Navbar from '../components/nav';
+import { useCsrf } from './CsrfProvider';
 
 // Confirmation Popover UI
 const ConfirmPopover = ({ anchorRef, onConfirm, onCancel }) => {
@@ -47,6 +48,7 @@ const ConfirmPopover = ({ anchorRef, onConfirm, onCancel }) => {
 
 
 export default function Cart() {
+  const { csrfToken } = useCsrf();
   const [cart, setCart] = useState([]);
   const [showConfirm, setShowConfirm] = useState(false);
   const [itemToRemove, setItemToRemove] = useState(null);
@@ -84,7 +86,11 @@ export default function Cart() {
   const fetchCart = async () => {
     const token = localStorage.getItem('token');
     const res = await fetch('https://localhost:3000/api/cart', {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'X-CSRF-Token': csrfToken,
+      },
+      credentials: 'include',
     });
     const data = await res.json();
     if (data.success && data.cart) {
@@ -154,7 +160,9 @@ export default function Cart() {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
+        'X-CSRF-Token': csrfToken,
       },
+      credentials: 'include',
       body: JSON.stringify({
         productId: id,
         qty: newQty,
@@ -181,7 +189,9 @@ export default function Cart() {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
+        'X-CSRF-Token': csrfToken,
       },
+      credentials: 'include',
       body: JSON.stringify({
         productId: item.id,
         color: item.color,
@@ -206,12 +216,15 @@ export default function Cart() {
 
   const handleAddToCart = async (product) => {
     // ...existing logic to get size/color...
+    const token = localStorage.getItem('token');
     const res = await fetch('https://localhost:3000/api/cart/add', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
+        'X-CSRF-Token': csrfToken,
       },
+      credentials: 'include',
       body: JSON.stringify({
         productId: product._id,
         qty: 1,
@@ -257,23 +270,21 @@ export default function Cart() {
         'https://localhost:3000/api/payments/khalti/initiate',
         {
           amount: totalAmt,
-          userId: localStorage.getItem('userId'), // Ensure this exists
+          userId: localStorage.getItem('userId'),
           products: completeItems.map(item => ({
             productId: item.id,
             quantity: item.qty,
             size: item.size,
             name: item.title,
-            color: item.color, // ✅ Fix: send selected color too
+            color: item.color,
           }))
-          
         },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}`, 'X-CSRF-Token': csrfToken } }
       );
 
       if (res.data.payment_url) {
-        // Place this code here:
         localStorage.setItem("khaltiTempOrder", JSON.stringify({
-          userId: localStorage.getItem('userId'), // <-- Make sure this is set and not null!
+          userId: localStorage.getItem('userId'),
           amount: totalAmt,
           products: completeItems.map(item => ({
             productId: item.id,

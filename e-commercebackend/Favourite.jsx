@@ -3,7 +3,7 @@ import { FaHeart, FaTrash } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import Footer from '../components/footer';
 import Navbar from '../components/nav';
-import axios from 'axios';
+import { useCsrf } from '../e-commercefrontend/src/public/CsrfProvider';
 
 const BASE_URL = 'http://localhost:3000';
 
@@ -13,6 +13,7 @@ const Favourite = () => {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
+  const { api } = useCsrf();
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));
     const token = localStorage.getItem('token');
@@ -21,10 +22,7 @@ const Favourite = () => {
       setLoading(false);
       return;
     }
-
-    axios.get(`${BASE_URL}/api/favorites`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    api.get(`${BASE_URL}/api/favorites`)
       .then((res) => {
         if (Array.isArray(res.data.favorites)) {
           setFavorites(res.data.favorites);
@@ -42,13 +40,7 @@ const Favourite = () => {
   }, []);
 
   const handleRemove = async (productId) => {
-    const token = localStorage.getItem('token');
-    await axios.post(`${BASE_URL}/api/favorites/remove`, { productId }, {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    await api.post(`${BASE_URL}/api/favorites/remove`, { productId });
     setFavorites((prev) => prev.filter((p) => p._id !== productId));
   };
 

@@ -10,144 +10,11 @@
 //   window.location.href = '/login';
 // }
 import '@fortawesome/fontawesome-free/css/all.min.css';
-import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-// Axios instance with interceptor for auto-refresh and session expiration handling
-// Always use withCredentials: true so cookies (refreshToken) are sent with requests
-const api = axios.create({
-  withCredentials: true,
-});
-
-// Example backend CORS and cookie settings (for reference):
-// const cors = require('cors');
-// app.use(cors({
-//   origin: 'https://localhost:5173', // your frontend URL
-//   credentials: true
-// }));
-// res.cookie('refreshToken', token, {
-//   httpOnly: true,
-//   secure: true, // only if using HTTPS
-//   sameSite: 'none', // 'lax' for same-site, 'none' for cross-site
-//   path: '/',
-//   maxAge: 7 * 24 * 60 * 60 * 1000
-// });
-
-// Add Authorization header to protected requests (not login, signup, refresh, etc.)
-api.interceptors.request.use(
-  config => {
-    // Only attach token for protected endpoints
-    const unprotected = [
-      '/api/auth/login',
-      '/api/users/login',
-      '/api/auth/admin/setup-mfa',
-      '/api/users/refresh-token',
-      '/api/admin/refresh-token',
-      '/api/users/signup',
-    ];
-    const isUnprotected = unprotected.some(path => config.url && config.url.includes(path));
-    if (!isUnprotected) {
-      // Always get the latest token from localStorage
-      const token = localStorage.getItem('token');
-      if (token) {
-        config.headers['Authorization'] = 'Bearer ' + token;
-      } else {
-        delete config.headers['Authorization'];
-      }
-    } else {
-      delete config.headers['Authorization'];
-    }
-    return config;
-  },
-  error => Promise.reject(error)
-);
-
-let isRefreshing = false;
-let failedQueue = [];
-
-const processQueue = (error, token = null) => {
-  failedQueue.forEach(prom => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
-  });
-  failedQueue = [];
-};
-
-// Axios response interceptor: Handles automatic access token refresh on 401/403 errors.
-// The isLoginOrRefresh variable ensures that refresh logic is only triggered for protected API calls,
-// and NOT for login or refresh endpoints themselves (to avoid infinite loops).
-api.interceptors.response.use(
-  response => response,
-  async error => {
-    const originalRequest = error.config;
-    // Only try refresh if not already retried and error is 401/403 and not a login/refresh endpoint
-    const isLoginOrRefresh = originalRequest.url && (
-      originalRequest.url.includes('/api/auth/login') ||
-      originalRequest.url.includes('/api/users/login') ||
-      originalRequest.url.includes('/api/users/refresh-token') ||
-      originalRequest.url.includes('/api/admin/refresh-token')
-    );
-    if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry && !isLoginOrRefresh) {
-      console.log('[Token Refresh] Access token expired or invalid. Attempting refresh...');
-      originalRequest._retry = true;
-      if (isRefreshing) {
-        // Queue requests while refreshing
-        return new Promise(function(resolve, reject) {
-          failedQueue.push({ resolve, reject });
-        })
-          .then(token => {
-            console.log('[Token Refresh] Request resumed with new token.');
-            originalRequest.headers['Authorization'] = 'Bearer ' + token;
-            return api(originalRequest);
-          })
-          .catch(err => Promise.reject(err));
-      }
-      isRefreshing = true;
-      try {
-        // Try both admin and user refresh endpoints
-        let refreshRes;
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        if (user && user.role === 'admin') {
-          // Always use withCredentials: true for refresh
-          console.log('[Token Refresh] Calling admin refresh endpoint...');
-          refreshRes = await axios.post('https://localhost:3000/api/admin/refresh-token', {}, { withCredentials: true });
-        } else {
-          console.log('[Token Refresh] Calling user refresh endpoint...');
-          refreshRes = await axios.post('https://localhost:3000/api/users/refresh-token', {}, { withCredentials: true });
-        }
-        const newToken = refreshRes.data.token;
-        if (newToken) {
-          console.log('[Token Refresh] New access token received and set.');
-          localStorage.setItem('token', newToken);
-          processQueue(null, newToken);
-          // Update Authorization header for the original request and all future requests
-          originalRequest.headers['Authorization'] = 'Bearer ' + newToken;
-          api.defaults.headers.common['Authorization'] = 'Bearer ' + newToken;
-          return api(originalRequest);
-        } else {
-          // If refresh endpoint returns no token, just reject and stay on the page
-          console.warn('[Token Refresh] No new token received from refresh endpoint.');
-          processQueue('No token', null);
-          return Promise.reject(error);
-        }
-      } catch (refreshErr) {
-        // For any refresh error, just reject and stay on the page (do not clear localStorage or show error)
-        console.error('[Token Refresh] Refresh failed:', refreshErr);
-        processQueue(refreshErr, null);
-        return Promise.reject(refreshErr);
-      } finally {
-        isRefreshing = false;
-      }
-    }
-    // If not handled, just reject
-    return Promise.reject(error);
-  }
-);
+import { useCsrf } from './CsrfProvider';
 
 import logo from '../assets/images/logoo.png';
 import signupDefault from '../assets/images/signup.png';
@@ -205,12 +72,18 @@ const Login = () => {
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState(''); // QR code data URL state
   const [isInitialMFASetup, setIsInitialMFASetup] = useState(false); // Track if this is initial MFA setup
 
+  // Use the CSRF-aware Axios instance from CsrfProvider
+  const { api, csrfToken } = useCsrf();
+  // Ensure CSRF token is attached to all requests (for extra safety)
+  api.defaults.headers['X-CSRF-Token'] = csrfToken;
+  console.log('CSRF token:', csrfToken);
+
   // Fetch QR code for MFA setup only during initial setup
   useEffect(() => {
     const fetchQRCode = async () => {
       if (pendingAdmin && showMFAModal && isInitialMFASetup) {
         try {
-          const res = await axios.post('https://localhost:3000/api/auth/admin/setup-mfa', {
+          const res = await api.post('https://localhost:3000/api/auth/admin/setup-mfa', {
             email: pendingAdmin.email,
           });
           setQrCodeDataUrl(res.data.qr); // Use 'qr' from backend response
@@ -220,7 +93,7 @@ const Login = () => {
       }
     };
     fetchQRCode();
-  }, [pendingAdmin, showMFAModal, isInitialMFASetup]);
+  }, [pendingAdmin, showMFAModal, isInitialMFASetup, api]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -253,12 +126,16 @@ const Login = () => {
     try {
       // Try admin login first (step 1: no MFA)
       let adminRes;
+      let adminErrorMsg = '';
       try {
         adminRes = await api.post('https://localhost:3000/api/auth/login', {
           email: form.email,
           password: form.password
+        }, {
+          headers: { 'X-CSRF-Token': csrfToken }
         });
       } catch (adminErr) {
+        adminErrorMsg = adminErr.response?.data?.message || '';
         // If admin login fails with 400/401/403, try user login
         if (
           adminErr.response &&
@@ -268,7 +145,9 @@ const Login = () => {
         ) {
           // Try user login
           try {
-            const userRes = await api.post('https://localhost:3000/api/users/login', form);
+            const userRes = await api.post('https://localhost:3000/api/users/login', form, {
+              headers: { 'X-CSRF-Token': csrfToken }
+            });
             if (userRes.data.user && userRes.data.user.role === 'user') {
               localStorage.setItem('user', JSON.stringify(userRes.data.user));
               localStorage.setItem('userId', userRes.data.user._id);
@@ -277,19 +156,21 @@ const Login = () => {
               navigate('/home');
               return;
             } else {
-              setBackendError('Invalid credentials or user role.');
-              toast.error('Invalid credentials or user role.');
+              setBackendError(userRes.data?.message || 'Invalid credentials or user role.');
+              toast.error(userRes.data?.message || 'Invalid credentials or user role.');
               return;
             }
           } catch (userErr) {
-            const msg = userErr.response?.data?.message || 'Login failed';
+            // If both fail, show user error if present, else admin error
+            const userMsg = userErr.response?.data?.message;
+            const msg = userMsg || adminErrorMsg || 'Login failed';
             setBackendError(msg);
             toast.error(msg);
             return;
           }
         } else {
           // Other admin login errors
-          const msg = adminErr.response?.data?.message || 'Login failed';
+          const msg = adminErrorMsg || 'Login failed';
           setBackendError(msg);
           toast.error(msg);
           return;
@@ -347,6 +228,8 @@ const Login = () => {
         email: form.email,
         password: form.password,
         mfaCode: mfaCode,
+      }, {
+        headers: { 'X-CSRF-Token': csrfToken }
       });
       if (res.data.token && res.data.admin && res.data.admin.role === 'admin') {
         localStorage.setItem('token', res.data.token);
