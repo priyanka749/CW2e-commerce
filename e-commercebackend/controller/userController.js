@@ -49,14 +49,34 @@ const Session = require('../models/session');
 //   }
 // };
 
+
 const { validationResult } = require('express-validator');
+const axios = require('axios');
 
 exports.registerUser = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ message: errors.array().map(e => e.msg).join(', ') });
   }
-  const { fullName, email, phone, address, password, lat, lon } = req.body;
+
+  const { fullName, email, phone, address, password, lat, lon, captchaToken } = req.body;
+
+  // Verify reCAPTCHA
+  if (!captchaToken) {
+    return res.status(400).json({ message: 'Captcha token is required' });
+  }
+  try {
+    const secretKey = '6Lc4iJIrAAAAAMGW_g390TyeNfYsc8mVXO8JRuqD';
+    const verifyUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${captchaToken}`;
+    const captchaRes = await axios.post(verifyUrl);
+    if (!captchaRes.data.success) {
+      return res.status(400).json({ message: 'Captcha verification failed' });
+    }
+  } catch (captchaErr) {
+    return res.status(500).json({ message: 'Captcha verification error' });
+  }
+
+  // ...existing registration logic...
 
   try {
     const existing = await User.findOne({ email });

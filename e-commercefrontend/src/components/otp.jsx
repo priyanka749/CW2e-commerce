@@ -3,11 +3,13 @@ import { useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useCsrf } from '../public/CsrfProvider';
 
 import logo from '../assets/images/logo1.png';
 
 const OtpVerification = () => {
   const inputRefs = useRef([]);
+  const { csrfToken } = useCsrf();
   const [otp, setOtp] = useState(Array(6).fill(''));
   const location = useLocation();
   const navigate = useNavigate();
@@ -42,11 +44,14 @@ const OtpVerification = () => {
     }
 
     try {
-      const response = await axios.post('https://localhost:3000/api/users/verify-otp', {
-        userId,
-        otp: enteredOtp,
-      });
-
+      const response = await axios.post(
+        'https://localhost:3000/api/users/verify-otp',
+        { userId, otp: enteredOtp },
+        {
+          headers: { 'x-csrf-token': csrfToken },
+          withCredentials: true
+        }
+      );
       toast.success(response.data.message || 'OTP verified!');
       setTimeout(() => navigate('/login'), 1500);
     } catch (err) {

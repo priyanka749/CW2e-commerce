@@ -1,5 +1,6 @@
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import { useEffect, useState } from 'react';
+import ReCAPTCHA from 'react-google-recaptcha';
 import { useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -33,6 +34,7 @@ const Signup = () => {
     password: false,
     confirmPassword: false,
   });
+  const [captchaToken, setCaptchaToken] = useState('');
 
   const navigate = useNavigate();
 
@@ -156,6 +158,11 @@ const Signup = () => {
       return;
     }
 
+    if (!captchaToken) {
+      toast.error("Please complete the CAPTCHA.");
+      return;
+    }
+
     if (!form.lat || !form.lon) {
       const confirm = window.confirm("You haven't selected a geolocation. Are you sure you want to continue with just the typed address?");
       if (!confirm) return;
@@ -169,7 +176,8 @@ const Signup = () => {
         address: form.address,
         password: form.password,
         lat: form.lat,
-        lon: form.lon
+        lon: form.lon,
+        captchaToken: captchaToken
       }, {
         headers: {
           'X-CSRF-Token': csrfToken
@@ -260,6 +268,13 @@ const Signup = () => {
               <span onClick={() => navigate('/login')} className="font-bold text-[#540b0e] hover:underline cursor-pointer">Log In</span>
             </div>
 
+            <div className="mb-4 flex justify-center">
+              <ReCAPTCHA
+                sitekey="6Lc4iJIrAAAAAMpPbQ3JF1Q-PD9eRt95cX93wZfh"
+                onChange={token => setCaptchaToken(token)}
+                theme="light"
+              />
+            </div>
             <div className="flex justify-center">
               <button
                 onClick={handleSubmit}

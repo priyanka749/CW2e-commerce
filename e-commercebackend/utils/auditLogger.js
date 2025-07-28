@@ -1,10 +1,12 @@
-// utils/auditLogger.js
-const fs = require('fs');
-const path = require('path');
+const AuditLog = require('../models/auditLog');
+const mongoose = require('mongoose');
 
-function logAudit(event, userId, details = '') {
-  const logLine = `[${new Date().toISOString()}] [${event}] User: ${userId} ${details}\n`;
-  fs.appendFileSync(path.join(__dirname, '../logs/audit.log'), logLine);
+async function logAudit(action, userId, details = '') {
+  let log = { action, details, timestamp: new Date() };
+  if (mongoose.Types.ObjectId.isValid(userId)) {
+    log.userId = userId;
+  }
+  await AuditLog.create(log);
 }
 
 module.exports = logAudit;

@@ -1,3 +1,5 @@
+
+
 import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { FaBoxOpen, FaClipboardList, FaMoneyCheckAlt, FaQuestionCircle, FaSignOutAlt, FaTags, FaTrash, FaUsers } from 'react-icons/fa';
@@ -7,9 +9,10 @@ import { useCsrf } from '../public/CsrfProvider';
 import ImageUploadWithName from './add';
 import AdminAddProduct from './addproduct';
 import AdminSales from './addsales';
+import DashboardCard from './DashboardCard';
 import PaymentManagement from './paymentstatment';
 
-import DashboardCard from './DashboardCard';
+
 
 
 const pages = [
@@ -20,15 +23,39 @@ const pages = [
   { key: 'payments', label: 'Payment Statement', icon: <FaMoneyCheckAlt /> },
   { key: 'Sales', label: 'Sales Management', icon: <FaTags /> },
   { key: 'users', label: 'User Management', icon: <FaUsers /> },
-  { key: 'queries', label: 'User Queries', icon: <FaQuestionCircle /> },
+  { key: 'activity', label: 'Activity Log', icon: <FaQuestionCircle /> },
 ];
+
 
 const AdminDashboard = () => {
   const [activePage, setActivePage] = useState('products');
   const [users, setUsers] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [activityLogs, setActivityLogs] = useState([]);
+  const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  // Fetch user activity logs using fetch (per user request)
+  useEffect(() => {
+    if (activePage === 'activity') {
+      fetch('https://localhost:3000/api/auth/activity-log', { credentials: 'include' })
+        .then(res => {
+          if (!res.ok) throw new Error('Network response was not ok');
+          return res.json();
+        })
+        .then(setActivityLogs)
+        .catch(() => setActivityLogs([]));
+      // Fetch all logs with user profile info for the logs table
+      fetch('https://localhost:3000/api/admin/activity-log', { credentials: 'include' })
+        .then(res => {
+          if (!res.ok) throw new Error('Network response was not ok');
+          return res.json();
+        })
+        .then(setLogs)
+        .catch(() => setLogs([]));
+    }
+  }, [activePage]);
 
   const handleSidebarClick = (key) => {
     setActivePage(key);
@@ -170,14 +197,47 @@ const AdminDashboard = () => {
     }
   };
 
-  // Fetch users when users page is active, orders when orders page is active
+  // Fetch users, orders, or activity logs when page changes
   useEffect(() => {
     if (activePage === 'users') {
       fetchUsers();
     } else if (activePage === 'orders') {
       fetchOrders();
+    } else if (activePage === 'activity') {
+      fetchActivityLogs();
     }
   }, [activePage]);
+
+  // Fetch activity logs for the current user (not admin/all logs)
+  const fetchActivityLogs = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('https://localhost:3000/api/auth/activity-log', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        withCredentials: true
+      });
+      setActivityLogs(response.data);
+    } catch (error) {
+      let msg = 'Failed to fetch activity logs';
+      if (error.response) {
+        msg += `: ${error.response.status} ${error.response.statusText}`;
+        if (error.response.data && typeof error.response.data === 'object') {
+          msg += `\n${JSON.stringify(error.response.data)}`;
+        } else if (typeof error.response.data === 'string') {
+          msg += `\n${error.response.data}`;
+        }
+      } else if (error.message) {
+        msg += `: ${error.message}`;
+      }
+      console.error('Error fetching activity logs:', error);
+      alert(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const { csrfToken } = useCsrf();
   const handleLogout = async () => {
@@ -543,10 +603,81 @@ const AdminDashboard = () => {
             </div>
           )}
 
-          {activePage === 'queries' && (
-            <div className="text-center">
-              <h4 className="text-2xl font-bold mb-2 text-[#2563eb]">User Queries</h4>
-              <p className="text-[#2563eb]">View and respond to user queries here.</p>
+          {activePage === 'activity' && (
+            <div className="w-full">
+              <h4 className="text-2xl font-bold mb-6 text-[#2563eb]">Activity Log</h4>
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#2563eb]"></div>
+                  <p className="mt-2 text-[#2563eb]">Loading activity logs...</p>
+                </div>
+              ) : (
+                <>
+                  <div className="bg-white rounded-lg shadow-lg overflow-x-auto mb-8">
+                    <table className="w-full">
+                      <thead className="bg-[#2563eb] text-white">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Timestamp</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Action</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">User ID</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Details</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {activityLogs.length === 0 ? (
+                          <tr>
+                            <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
+                              No activity logs found
+                            </td>
+                          </tr>
+                        ) : (
+                          activityLogs.map((log, idx) => (
+                            <tr key={log._id || idx} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(log.timestamp).toLocaleString()}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{log.action}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{log.userId || 'N/A'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{log.details || ''}</td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                  {/* Additional logs table as requested */}
+                  <div className="bg-white rounded-lg shadow-lg overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-[#2563eb] text-white">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Timestamp</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Action</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">User Name</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">User Email</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Details</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {logs.length === 0 ? (
+                          <tr>
+                            <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                              No logs found
+                            </td>
+                          </tr>
+                        ) : (
+                          logs.map(log => (
+                            <tr key={log._id}>
+                              <td>{new Date(log.timestamp).toLocaleString()}</td>
+                              <td>{log.action}</td>
+                              <td>{log.userId && log.userId.fullName ? log.userId.fullName : 'N/A'}</td>
+                              <td>{log.userId && log.userId.email ? log.userId.email : 'N/A'}</td>
+                              <td>{log.details}</td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>

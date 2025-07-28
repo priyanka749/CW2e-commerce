@@ -1,5 +1,3 @@
-// XSS protection
-const xss = require('xss-clean');
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -82,14 +80,13 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
-app.use(xss()); // Protect against XSS
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 app.use(cookieParser());
 // Session middleware
-// Session middleware (ensure settings match your cookie auth requirements)
+
 app.use(session({
-  secret: 'yourSecretKey', // Change this to a strong secret in production!
+  secret: 'yourSecretKey', 
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -97,13 +94,13 @@ app.use(session({
     sameSite: 'none', // MUST be 'none' for cross-site cookies with HTTPS
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    // domain: 'yourdomain.com' // Uncomment and set if using a custom domain
+    
   }
 }));
-// NOTE: You must use HTTPS for secure cookies to work in browsers!
 
 
-// CSRF token endpoint for frontend to fetch token (apply csurf only here)
+
+
 app.get('/api/csrf-token', csrf({ cookie: true }), (req, res) => {
   res.json({ csrfToken: req.csrfToken() });
 });
@@ -131,8 +128,8 @@ app.use('/api/cart', cartRoutes);// ✅ Product routes
 app.use('/api/chat', chatRoute); // ✅ Chat route
 app.use('/api/favorites', require('./routes/favRoute'));
 // app.use('/api/payment', khaltiRoute);
-app.use('/api/payments', require('./routes/paymentRoutes')); // ✅ Payment routes
-// app.use('/api/locations', require('./routes/locationRoute')); // ✅ Location routes
+app.use('/api/payments', require('./routes/paymentRoutes')); 
+// app.use('/api/locations', require('./routes/locationRoute')); 
 
 app.use('/api/location', locationRoute);
 app.use('/api/sales', saleRoutes); // ✅ Sale routes
@@ -147,8 +144,6 @@ app.get('/', (req, res) => {
 const PORT = 3000;
 const HTTPS_PORT = 3000; // Default HTTPS port
 
-// For development with self-signed certificate
-// Start HTTPS server if certificates are available
 if (httpsEnabled && httpsOptions) {
   https.createServer(httpsOptions, app).listen(HTTPS_PORT, () => {
     console.log(`🚀 HTTPS Server running at https://localhost:${HTTPS_PORT}`);
@@ -156,7 +151,7 @@ if (httpsEnabled && httpsOptions) {
 }
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
+  // console.log(`🚀 Server running at http://localhost:${PORT}`);
   if (httpsEnabled) {
     console.log(`   HTTPS available at https://localhost:${HTTPS_PORT}`);
   } else {

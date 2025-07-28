@@ -113,8 +113,9 @@ const ProductDetail = () => {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
-        'X-CSRF-Token': csrfToken,
+        'x-csrf-token': csrfToken,
       },
+      credentials: 'include',
       body: JSON.stringify({
         productId: prod._id,
         qty: prod === product ? quantity : 1,
@@ -136,8 +137,9 @@ const ProductDetail = () => {
       const res2 = await fetch('https://localhost:3000/api/cart', {
         headers: {
           Authorization: `Bearer ${token}`,
-          'X-CSRF-Token': csrfToken,
+          'x-csrf-token': csrfToken,
         },
+        credentials: 'include',
       });
       const cartData = await res2.json();
       if (cartData.success) {
@@ -200,38 +202,38 @@ const ProductDetail = () => {
   };
 
   const handleReviewSubmit = async () => {
-  const token = localStorage.getItem('token');
-  if (!token) return toast.error("Please log in to submit a review");
-  if (!reviewRating || !reviewText.trim()) return toast.warn("Please add a rating and comment");
+    const token = localStorage.getItem('token');
+    if (!token) return toast.error("Please log in to submit a review");
+    if (!reviewRating || !reviewText.trim()) return toast.warn("Please add a rating and comment");
 
-  try {
-    const res = await fetch(`https://localhost:3000/api/reviews/${id}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-        'X-CSRF-Token': csrfToken,
-      },
-      body: JSON.stringify({ rating: reviewRating, comment: reviewText })
-    });
+    try {
+      const res = await fetch(`https://localhost:3000/api/reviews/${id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          'x-csrf-token': csrfToken,
+        },
+        body: JSON.stringify({ rating: reviewRating, comment: reviewText })
+      });
 
-    const isJson = res.headers.get("content-type")?.includes("application/json");
+      const isJson = res.headers.get("content-type")?.includes("application/json");
 
-    const data = isJson ? await res.json() : { message: 'Invalid server response' };
+      const data = isJson ? await res.json() : { message: 'Invalid server response' };
 
-    if (res.ok) {
-      toast.success("Review submitted");
-      setAllReviews(prev => [...prev, data]);
-      setReviewRating(0);
-      setReviewText('');
-    } else {
-      toast.error(data.message || 'Failed to submit review');
+      if (res.ok) {
+        toast.success("Review submitted");
+        setAllReviews(prev => [...prev, data]);
+        setReviewRating(0);
+        setReviewText('');
+      } else {
+        toast.error(data.message || 'Failed to submit review');
+      }
+    } catch (err) {
+      console.error('Review submission error:', err.message);
+      toast.error("Something went wrong");
     }
-  } catch (err) {
-    console.error('Review submission error:', err.message);
-    toast.error("Something went wrong");
-  }
-};
+  };
 
 
   const handleDeleteReview = async (reviewId) => {
@@ -242,7 +244,7 @@ const ProductDetail = () => {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
-          'X-CSRF-Token': csrfToken,
+          'x-csrf-token': csrfToken,
         },
       });
       setAllReviews(prev => prev.filter(r => r._id !== reviewId));
