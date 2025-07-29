@@ -5,6 +5,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Footer from '../components/footer';
 import Navbar from '../components/nav';
+import SafeHtml from '../components/SafeHtml';
 import { CsrfContext } from './CsrfProvider';
 
 const toastStyle = {
@@ -286,6 +287,8 @@ const AllProducts = () => {
                     <h3 className="text-lg font-bold text-[#540b0e] truncate">{product.title}</h3>
                     <p className="text-sm text-gray-700"><span className="font-medium">Fabric:</span> {product.fabric}</p>
                     <p className="text-sm text-gray-700"><span className="font-medium">Price:</span> <span className="text-emerald-600 font-semibold">Rs. {product.price}</span></p>
+                    {/* If product.description exists and is HTML, render safely */}
+                    {product.description && <SafeHtml html={product.description} />}
                     <div className="flex items-center gap-1.5">
                       <span className="font-medium text-sm text-gray-700">Rating:</span>
                       {Array.from({ length: product.rating }).map((_, i) => (

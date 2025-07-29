@@ -17,6 +17,7 @@
     "antd": "^5.26.4",
     "axios": "^1.10.0",
     "color-thief-browser": "^2.0.2",
+    "dompurify": "^3.2.6",
     "khalti-checkout-web": "^2.2.0",
     "lucide-react": "^0.522.0",
     "react": "^19.1.0",

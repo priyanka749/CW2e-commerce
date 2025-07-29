@@ -351,6 +351,7 @@ const FamousProducts = () => {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
+          headers: { 'X-CSRF-Token': csrfToken }
         },
         body: JSON.stringify({
           productId: product._id,
@@ -370,7 +371,10 @@ const FamousProducts = () => {
         });
 
         const res2 = await fetch('https://localhost:3000/api/cart', {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'X-CSRF-Token': csrfToken
+          }
         });
         const cartData = await res2.json();
         if (cartData.success) {

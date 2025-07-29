@@ -8,30 +8,17 @@ const certPath = path.join(certDir, 'localhost.pem');
 
 console.log('🔐 Generating SSL certificates for local development...\n');
 
-// Create cert directory if it doesn't exist
 if (!fs.existsSync(certDir)) {
   fs.mkdirSync(certDir, { recursive: true });
   console.log(`✅ Created directory: ${certDir}`);
 }
 
-// Check if certificates already exist
-// if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
-//   console.log('ℹ️  SSL certificates already exist.');
-//   console.log(`   Key: ${keyPath}`);
-//   console.log(`   Cert: ${certPath}`);
-//   process.exit(0);
-// }
 
 try {
   console.log('🔑 Generating private key and certificate...');
 
-  // Generate a self-signed certificate
   const pems = selfsigned.generate(
-    // [
-    //   { name: 'commonName', value: 'localhost' },
-    //   { name: 'organizationName', value: 'Local Development' },
-    //   { name: 'countryName', value: 'US' }
-    // ],
+   
 
     [
       { name: 'commonName', value: 'Priyanka' },
@@ -55,7 +42,7 @@ try {
     }
   );
 
-  // Save the private key and certificate
+
   fs.writeFileSync(keyPath, pems.private);
   fs.writeFileSync(certPath, pems.cert);
 

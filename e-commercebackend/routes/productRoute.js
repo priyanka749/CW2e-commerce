@@ -27,6 +27,7 @@ const express = require('express');
 const router = express.Router();
 const upload = require('../middleware/upload');
 const { protect, adminOnly } = require('../middleware/auth');
+const { body } = require('express-validator');
 const productController = require('../controller/productController');
 
 const {
@@ -42,6 +43,11 @@ router.post(
   '/',
   protect,
   adminOnly,
+  [
+    body('title').trim().escape(),
+    body('description').trim().escape(),
+    // Add more validators for other fields as needed
+  ],
   upload.fields([
     { name: 'image', maxCount: 1 },       // main image
     { name: 'images', maxCount: 10 }      // thumbnails / variant images
@@ -53,6 +59,11 @@ router.put(
   '/:id',
   protect,
   adminOnly,
+  [
+    body('title').optional().trim().escape(),
+    body('description').optional().trim().escape(),
+    // Add more validators for other fields as needed
+  ],
   upload.fields([
     { name: 'image', maxCount: 1 },
     { name: 'images', maxCount: 10 }

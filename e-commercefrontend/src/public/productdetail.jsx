@@ -8,6 +8,7 @@ import Footer from '../components/footer';
 import Navbar from '../components/nav';
 import RealtimeVirtualTryOn from '../components/RealtimeVirtualTryOn';
 
+
 import mainImg from '../assets/images/detail.png';
 import img1 from '../assets/images/detail1.png';
 import img2 from '../assets/images/detail2.png';
@@ -23,11 +24,12 @@ const SuccessCartToast = () => (
   </div>
 );
 
+import SafeHtml from '../components/SafeHtml';
 import { useCsrf } from '../public/CsrfProvider';
 
 const ProductDetail = () => {
   const navigate = useNavigate();
-  const { csrfToken } = useCsrf();
+  const { csrfToken, api } = useCsrf();
   const { id } = useParams();
 
   const [product, setProduct] = useState(null);
@@ -65,10 +67,22 @@ const ProductDetail = () => {
 
     const fetchReviews = async () => {
       try {
-         const res = await fetch(`https://localhost:3000/api/products/${id}`);
+        const res = await fetch(`https://localhost:3000/api/products/${id}`);
         const data = await res.json();
-        setAllReviews(data.reviews || data); // Adjusted to handle response structure
+        // If reviews are present, ensure userId is always an object with fullName
+        let reviews = data.reviews || data;
+        if (Array.isArray(reviews)) {
+          reviews = reviews.map(r => {
+            if (typeof r.userId === 'string') {
+              // fallback: show as Anonymous
+              return { ...r, userId: { fullName: 'Anonymous', _id: r.userId } };
+            }
+            return r;
+          });
+        }
+        setAllReviews(reviews);
       } catch {
+        setAllReviews([]);
         toast.error('Failed to load reviews');
       }
     };
@@ -207,30 +221,30 @@ const ProductDetail = () => {
     if (!reviewRating || !reviewText.trim()) return toast.warn("Please add a rating and comment");
 
     try {
-      const res = await fetch(`https://localhost:3000/api/reviews/${id}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-          'x-csrf-token': csrfToken,
-        },
-        body: JSON.stringify({ rating: reviewRating, comment: reviewText })
-      });
-
+      const res = await fetch(`https://localhost:3000/api/reviews/${id}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+            'x-csrf-token': csrfToken,
+          },
+          credentials: 'include',
+          body: JSON.stringify({ rating: reviewRating, comment: reviewText })
+        }
+      );
       const isJson = res.headers.get("content-type")?.includes("application/json");
-
       const data = isJson ? await res.json() : { message: 'Invalid server response' };
-
       if (res.ok) {
         toast.success("Review submitted");
-        setAllReviews(prev => [...prev, data]);
+        // Always refetch reviews after submit to get latest and correct user info
+        fetchReviews();
         setReviewRating(0);
         setReviewText('');
       } else {
         toast.error(data.message || 'Failed to submit review');
       }
     } catch (err) {
-      console.error('Review submission error:', err.message);
       toast.error("Something went wrong");
     }
   };
@@ -240,12 +254,12 @@ const ProductDetail = () => {
     const token = localStorage.getItem('token');
     if (!token) return;
     try {
-      await fetch(`https://localhost:3000/api/reviews/${reviewId}`, {
-        method: 'DELETE',
+      await api.delete(`/reviews/${reviewId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
-          'x-csrf-token': csrfToken,
+          'X-CSRF-Token': csrfToken,
         },
+        withCredentials: true,
       });
       setAllReviews(prev => prev.filter(r => r._id !== reviewId));
       toast.success('Review deleted');
@@ -265,11 +279,12 @@ const ProductDetail = () => {
 
   const colors = product?.colors || [];
   const sizes = product?.sizes?.map(s => s.size) || [];
+  // Build thumbnails array from product main image and additional images
   const thumbnails = product
     ? [
-        `https://localhost:3000/uploads/${product.image}`,
-        ...(product.images ? product.images.map(img => `https://localhost:3000/uploads/${img}`) : [])
-      ]
+        product.image ? `https://localhost:3000/uploads/${product.image}` : null,
+        ...(Array.isArray(product.images) ? product.images.map(img => `https://localhost:3000/uploads/${img}`) : [])
+      ].filter(Boolean)
     : [mainImg, img1, img2, img3];
 
   if (loading) return <div className="text-center py-10 text-[#540b0e]">Loading product details...</div>;
@@ -291,17 +306,29 @@ const ProductDetail = () => {
         <div className="flex flex-col items-center space-y-6 w-full">
           <img src={selectedImage} alt="Selected" className="w-full h-[600px] object-cover rounded-xl shadow-md" />
           <div className="flex gap-4 flex-wrap justify-center">
-            {thumbnails.map((img, index) => (
-              <img
-                key={index}
-                src={img}
-                onClick={() => setSelectedImage(img)}
-                className={`w-24 h-24 object-cover rounded-md cursor-pointer shadow-sm hover:ring-2 hover:ring-[#540b0e] ${
-                  selectedImage === img ? 'ring-4 ring-[#540b0e]' : ''
-                }`}
-                alt={`thumb-${index}`}
-              />
-            ))}
+            {thumbnails.length > 0 ? (
+              thumbnails.map((img, index) => (
+                <img
+                  key={index}
+                  src={img}
+                  onClick={() => setSelectedImage(img)}
+                  className={`w-24 h-24 object-cover rounded-md cursor-pointer shadow-sm hover:ring-2 hover:ring-[#540b0e] ${
+                    selectedImage === img ? 'ring-4 ring-[#540b0e]' : ''
+                  }`}
+                  alt={`thumb-${index}`}
+                />
+              ))
+            ) : (
+              // fallback if no images
+              [mainImg, img1, img2, img3].map((img, index) => (
+                <img
+                  key={index}
+                  src={img}
+                  className="w-24 h-24 object-cover rounded-md cursor-pointer shadow-sm"
+                  alt={`thumb-fallback-${index}`}
+                />
+              ))
+            )}
           </div>
         </div>
 
@@ -438,12 +465,12 @@ const ProductDetail = () => {
           </div>
 
           <button 
-            className="w-full mt-6 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-3 text-lg font-medium rounded-lg flex items-center justify-center gap-2 transition-all duration-200 shadow-lg"
-            onClick={() => setIsVirtualTryOnOpen(true)}
+            // className="w-full mt-6 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-3 text-lg font-medium rounded-lg flex items-center justify-center gap-2 transition-all duration-200 shadow-lg"
+            // onClick={() => setIsVirtualTryOnOpen(true)}
           >
-            <span>🎥</span>
-            Live Virtual Try-On
-            <span>✨</span>
+            <span></span>
+            {/* Live Virtual Try-On */}
+            <span></span>
           </button>
         </div>
       </div>
@@ -503,7 +530,7 @@ const ProductDetail = () => {
                     </div>
                   )}
                 </div>
-                <p className="text-gray-700 text-sm">{r.comment}</p>
+                <SafeHtml html={r.comment} />
               </div>
             ))}
           </div>

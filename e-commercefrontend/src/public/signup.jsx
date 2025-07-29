@@ -95,7 +95,13 @@ const Signup = () => {
     return () => clearTimeout(delay);
   }, [form.address, locationDenied]);
 
-  const passwordPolicy = 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one symbol.';
+  const passwordPolicy = [
+    { label: 'At least 8 characters', test: (v) => v.length >= 8 },
+    { label: 'At least one uppercase letter', test: (v) => /[A-Z]/.test(v) },
+    { label: 'At least one lowercase letter', test: (v) => /[a-z]/.test(v) },
+    { label: 'At least one number', test: (v) => /\d/.test(v) },
+    { label: 'At least one symbol', test: (v) => /[^A-Za-z0-9]/.test(v) },
+  ];
   const validate = () => {
     const newErrors = {};
     if (!form.fullName) newErrors.fullName = "Full name is required.";
@@ -239,8 +245,18 @@ const Signup = () => {
                     </span>
                   )}
                   {field.name === "password" && (
-                    <div className={`text-xs mt-1 ml-2 ${form.password.length >= 8 && /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(form.password) ? 'text-green-600' : 'text-[#540b0e]'}`}>
-                      {passwordPolicy}
+                    <div className="text-xs mt-2 ml-2">
+                      <div className="flex flex-wrap gap-3">
+                        {passwordPolicy.map((rule, idx) => {
+                          const passed = rule.test(form.password);
+                          return (
+                            <span key={idx} className={`flex items-center gap-1 ${passed ? 'text-green-600' : 'text-gray-400'}`}>
+                              <i className={`fas ${passed ? 'fa-check-circle' : 'fa-circle'}`}></i>
+                              {rule.label}
+                            </span>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                   {field.name === "address" && suggestions.length > 0 && (

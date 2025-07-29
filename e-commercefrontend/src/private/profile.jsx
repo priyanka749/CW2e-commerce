@@ -1,4 +1,4 @@
-// User logout function with session management
+
 import { useEffect, useState } from 'react';
 import {
   FaBoxOpen,

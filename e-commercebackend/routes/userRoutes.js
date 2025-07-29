@@ -22,7 +22,7 @@ const {
   logoutAllDevices
 } = userController;
 
-// ✅ Routes
+
 router.post(
   '/register',
   [
@@ -34,7 +34,7 @@ router.post(
   registerUser
 );
 router.post('/verify-otp', verifyOTP);
-// Do NOT protect login route
+
 router.post(
   '/login',
   [
@@ -45,9 +45,6 @@ router.post(
 );
 router.get('/all', protect, getAllUsers); // Get all users (protected admin route)
 
-// ✅ Update profile (with image upload)
-
-// Update profile (with image upload and validation)
 router.put(
   '/profile',
   protect,
@@ -74,7 +71,7 @@ router.get('/sessions', protect, listSessions);
 router.post('/logout-all', protect, logoutAllDevices);
 
 
-// Get user by ID with validation (NoSQL injection protection)
+
 const { param } = require('express-validator');
 router.get('/:id', [param('id').isMongoId()], getUser);
 
