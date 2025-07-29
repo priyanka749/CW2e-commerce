@@ -15,7 +15,7 @@ exports.refreshToken = (req, res) => {
   }
 };
 const jwt = require('jsonwebtoken');
-const User = require('../models/user'); // Make sure the path is correct
+const User = require('../models/user'); 
 require('dotenv').config();
 
 // Protect middleware: checks for valid token and attaches user to req
