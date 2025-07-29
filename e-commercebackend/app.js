@@ -1,3 +1,5 @@
+
+
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -7,6 +9,7 @@ const https = require('https');
 const fs = require('fs');
 
 const connectDB = require("./config/db");
+const helmet = require('helmet');
 const session = require('express-session');
 const csrf = require('csurf');
 const cookieParser = require('cookie-parser');
@@ -80,10 +83,14 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
+app.use(helmet()); 
+
+app.use('/uploads', (req, res, next) => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(path.join(__dirname, 'public/uploads')));
 
 app.use(cookieParser());
-// Session middleware
 
 app.use(session({
   secret: 'yourSecretKey', 
@@ -94,10 +101,9 @@ app.use(session({
     sameSite: 'none', // MUST be 'none' for cross-site cookies with HTTPS
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    
+
   }
 }));
-
 
 
 
@@ -105,10 +111,9 @@ app.get('/api/csrf-token', csrf({ cookie: true }), (req, res) => {
   res.json({ csrfToken: req.csrfToken() });
 });
 
-// Apply CSRF protection to all routes after this point
+
 app.use(csrf({ cookie: true }));
 
-// CSRF error handler
 app.use((err, req, res, next) => {
   if (err.code === 'EBADCSRFTOKEN') {
     return res.status(403).json({ message: 'Invalid CSRF token' });
@@ -116,7 +121,7 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
-// Category routes for CRUD operations
+
 
 app.use('/api/categories', categoryRoutes);
 
@@ -132,17 +137,18 @@ app.use('/api/payments', require('./routes/paymentRoutes'));
 // app.use('/api/locations', require('./routes/locationRoute')); 
 
 app.use('/api/location', locationRoute);
-app.use('/api/sales', saleRoutes); // ✅ Sale routes
-// app.use('/api/tryon', tryonRoute); // ✅ Tryon routes
+app.use('/api/sales', saleRoutes); 
+// app.use('/api/tryon', tryonRoute); 
 // ✅ Sale routes
-app.use('/api/reviews', reviewRoute); // ✅ Review routes
+app.use('/api/reviews', reviewRoute); 
 
 app.get('/', (req, res) => {
   res.send('API Server is running!');
 });
 
 const PORT = 3000;
-const HTTPS_PORT = 3000; // Default HTTPS port
+const HTTPS_PORT = 3000; 
+
 
 if (httpsEnabled && httpsOptions) {
   https.createServer(httpsOptions, app).listen(HTTPS_PORT, () => {
@@ -151,7 +157,7 @@ if (httpsEnabled && httpsOptions) {
 }
 
 app.listen(PORT, () => {
-  // console.log(`🚀 Server running at http://localhost:${PORT}`);
+ 
   if (httpsEnabled) {
     console.log(`   HTTPS available at https://localhost:${HTTPS_PORT}`);
   } else {

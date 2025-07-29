@@ -53,9 +53,9 @@ exports.loginAdmin = async (req, res) => {
     if (!admin || admin.role !== 'admin') {
       return res.status(401).json({ message: "Unauthorized. Not an admin." });
     }
-    // Ensure fields exist
+   
     if (typeof admin.failedLoginAttempts !== 'number') admin.failedLoginAttempts = 0;
-    // Check for account lockout
+ 
     if (admin.lockUntil && admin.lockUntil > Date.now()) {
       return res.status(403).json({ message: "Account is temporarily locked due to multiple failed login attempts. Try again later." });
     }
@@ -68,7 +68,7 @@ exports.loginAdmin = async (req, res) => {
       await admin.save();
       return res.status(401).json({ message: "Invalid credentials." });
     }
-    // If no mfaCode, prompt for MFA if needed
+   
     if (!mfaCode) {
       if (!admin.mfaSecret) {
         return res.status(403).json({ message: "MFA not set up for this admin." });
@@ -78,7 +78,7 @@ exports.loginAdmin = async (req, res) => {
         admin: { email: admin.email, role: admin.role, _id: admin._id }
       });
     }
-    // MFA verification
+  
     const verified = speakeasy.totp.verify({
       secret: admin.mfaSecret,
       encoding: 'base32',
@@ -88,11 +88,11 @@ exports.loginAdmin = async (req, res) => {
     if (!verified) {
       return res.status(401).json({ message: "Invalid MFA code." });
     }
-    // Reset failed attempts on successful login
+
     admin.failedLoginAttempts = 0;
     admin.lockUntil = undefined;
     await admin.save();
-    // Set session for admin
+  
     req.session.userId = admin._id;
     req.session.role = admin.role;
     const token = jwt.sign(

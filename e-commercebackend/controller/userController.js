@@ -152,7 +152,7 @@ exports.loginUser = async (req, res) => {
       logAudit('LOGIN_FAILED', user._id, 'Reason: User not verified');
       return res.status(403).json({ message: "User not verified" });
     }
-    // Account lockout logic
+  
     if (user.lockUntil && user.lockUntil > Date.now()) {
       logAudit('LOGIN_FAILED', user._id, 'Reason: Account locked');
       return res.status(403).json({ message: "Account is temporarily locked due to multiple failed login attempts. Try again later." });
@@ -164,7 +164,7 @@ exports.loginUser = async (req, res) => {
         user.lockUntil = Date.now() + 15 * 60 * 1000;
       }
       await user.save();
-      // Log failed login attempt
+  
       logAudit('LOGIN_FAILED', user._id, 'Reason: Incorrect password');
       return res.status(400).json({ message: "Incorrect password" });
     }
@@ -172,20 +172,20 @@ exports.loginUser = async (req, res) => {
     user.failedLoginAttempts = 0;
     user.lockUntil = undefined;
     await user.save();
-    // Generate access and refresh tokens
-    const accessToken = jwt.sign({ userId: user._id, role: user.role }, "supersecret", { expiresIn: '15m' });
+    
+    const accessToken = jwt.sign({ userId: user._id, role: user.role }, "supersecret", { expiresIn: '30m' });
     const refreshToken = jwt.sign({ userId: user._id, role: user.role }, "refreshsecret", { expiresIn: '7d' });
-    // Set refresh token as HTTP-only cookie
+    
 res.cookie('refreshToken', refreshToken, {
   httpOnly: true,
   secure: true,
   sameSite: 'none',
   maxAge: 7 * 24 * 60 * 60 * 1000
 });
-    req.session.userId = user._id; // Save user ID in session
-    // Log successful login
+    req.session.userId = user._id; 
+    
     logAudit('LOGIN_SUCCESS', user._id);
-    // Create session record
+   
     const session = new Session({
       userId: user._id,
       sessionId: req.sessionID || accessToken,
@@ -201,23 +201,22 @@ res.cookie('refreshToken', refreshToken, {
   }
 }
 
-// List active sessions/devices for user
+
 exports.listSessions = async (req, res) => {
   try {
     const sessions = await Session.find({ userId: req.user._id, isValid: true })
       .sort({ lastActive: -1 })
-      .limit(5); // Show up to 5 most recent devices
+      .limit(5); 
     res.status(200).json(sessions);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-// Logout from all devices
 exports.logoutAllDevices = async (req, res) => {
   try {
     await Session.updateMany({ userId: req.user._id }, { isValid: false });
-    // Optionally destroy all server-side sessions if using session store
+   
     logAudit('LOGOUT_ALL_DEVICES', req.user._id);
     res.status(200).json({ message: 'Logged out from all devices' });
   } catch (err) {
@@ -383,12 +382,12 @@ exports.changePassword = async (req, res) => {
   if (!isMatch) return res.status(400).json({ message: 'Incorrect current password' });
 
 
-  const maxAge = 90 * 24 * 60 * 60 * 1000; // 90 days in ms
+  const maxAge = 90 * 24 * 60 * 60 * 1000; 
   if (user.passwordLastChanged && Date.now() - user.passwordLastChanged.getTime() < maxAge) {
     
   }
 
-  // Check password reuse (last 5 passwords)
+
   let reused = false;
   if (user.passwordHistory && user.passwordHistory.length > 0) {
     for (const oldHash of user.passwordHistory) {
@@ -402,21 +401,20 @@ exports.changePassword = async (req, res) => {
     return res.status(400).json({ message: 'Cannot reuse previous passwords.' });
   }
 
-  // Hash new password
   const newHash = await bcrypt.hash(newPassword, 10);
   user.password = newHash;
   user.passwordLastChanged = Date.now();
-  // Add to history, keep last 5
+
   user.passwordHistory = user.passwordHistory || [];
   user.passwordHistory.push(newHash);
   if (user.passwordHistory.length > 5) user.passwordHistory = user.passwordHistory.slice(-5);
   await user.save();
-  // Log password change
+
   logAudit('PASSWORD_CHANGE', user._id);
   res.json({ message: 'Password updated successfully' });
 };
 
-// Logout User
+
 exports.logoutUser = (req, res) => {
   const userId = req.session.userId || 'unknown';
   req.session.destroy(err => {
