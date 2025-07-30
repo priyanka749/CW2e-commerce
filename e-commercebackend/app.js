@@ -1,5 +1,3 @@
-
-
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -14,7 +12,7 @@ const session = require('express-session');
 const csrf = require('csurf');
 const cookieParser = require('cookie-parser');
 
-// Check if HTTPS certificate files exist
+
 let httpsEnabled = false;
 let httpsOptions = null;
 
@@ -28,32 +26,24 @@ try {
       cert: fs.readFileSync(certPath)
     };
     httpsEnabled = true;
-    console.log('🔐 HTTPS certificate found. HTTPS will be enabled.');
+    console.log(' HTTPS certificate found. HTTPS will be enabled.');
   } else {
-    console.warn('⚠️  HTTPS certificate not found. Running in HTTP-only mode.');
+    console.warn('  HTTPS certificate not found. Running in HTTP-only mode.');
     console.warn('   To enable HTTPS, run: npm run generate-cert');
   }
 } catch (err) {
-  console.warn('⚠️  Error checking HTTPS certificates:', err.message);
+  console.warn('  Error checking HTTPS certificates:', err.message);
   console.warn('   Running in HTTP-only mode.');
 }
 const categoryRoutes = require('./routes/categoryRoutes');
 const productRoutes = require('./routes/productRoute');
 const cartRoutes = require('./routes/cartRoutes');
 const chatRoute = require('./routes/chatRoute');
-const Favorite = require('./models/fav'); // Import Favorite model
+const Favorite = require('./models/fav'); 
 const Payment = require('./models/payment');
 const locationRoute = require('./routes/locationRoute'); 
 const saleRoutes = require('./routes/salesRoute'); 
-const reviewRoute = require('./routes/reviewRoute'); // Import Review routes
-// Import Sale routes
- // Import Sale routes
-// const tryonRoute = require('./routes/tryonRoute'); // Import Tryon route
-
-// const Location = require('./models/location'); // Import Location model
-
-// const khaltiRoute = require('./routes/khaltiRoute');
-
+const reviewRoute = require('./routes/reviewRoute'); 
 
 
 
@@ -64,8 +54,8 @@ connectDB();
 
 const app = express();
 
-// Enforce HTTPS (redirect HTTP to HTTPS)
-app.enable('trust proxy'); // Important if behind a proxy (Heroku, Nginx, etc.)
+
+app.enable('trust proxy'); 
 app.use((req, res, next) => {
   if (req.secure || req.headers['x-forwarded-proto'] === 'https') {
     return next();
@@ -78,7 +68,7 @@ const corsOptions = {
     "https://192.168.10.103:5173"],
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   credentials: true,
-  allowedHeaders: ["Content-Type", "Authorization", "X-CSRF-Token"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-CSRF-Token", "x-csrf-token", "csrf-token", "XSRF-TOKEN"],
 };
 
 app.use(cors(corsOptions));
@@ -97,8 +87,8 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: true, // MUST be true for HTTPS
-    sameSite: 'none', // MUST be 'none' for cross-site cookies with HTTPS
+    secure: true, 
+    sameSite: 'none', 
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
 
@@ -111,8 +101,14 @@ app.get('/api/csrf-token', csrf({ cookie: true }), (req, res) => {
   res.json({ csrfToken: req.csrfToken() });
 });
 
+app.use((req, res, next) => {
 
-app.use(csrf({ cookie: true }));
+  if (req.path.startsWith('/api/payments/khalti/')) {
+    return next();
+  }
+
+  csrf({ cookie: true })(req, res, next);
+});
 
 app.use((err, req, res, next) => {
   if (err.code === 'EBADCSRFTOKEN') {
@@ -176,4 +172,3 @@ app.listen(PORT, () => {
 // app.listen(PORT, '0.0.0.0', () => {
 //   console.log(`🚀 HTTP Server running at http://0.0.0.0:${PORT}`);
 // });
-

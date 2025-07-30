@@ -142,7 +142,6 @@ exports.registerUser = async (req, res) => {
   }
 };
 
-// Admin logout endpoint
 exports.logoutAdmin = async (req, res) => {
   try {
     // Clear the JWT token cookie
@@ -153,7 +152,6 @@ exports.logoutAdmin = async (req, res) => {
       sameSite: 'strict',
     });
 
-    // Clear any session data
     if (req.session) {
       req.session.destroy(err => {
         if (err) {
@@ -166,7 +164,7 @@ exports.logoutAdmin = async (req, res) => {
     res.status(200).json({ 
       success: true,
       message: "Admin logged out successfully",
-      redirect: "/" // Redirect to home page
+      redirect: "/" 
     });
   } catch (err) {
     console.error('Logout error:', err);
