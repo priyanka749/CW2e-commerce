@@ -1,13 +1,13 @@
-// Example: Audit logging for adding to cart
+
 exports.addToCart = async (req, res) => {
-  // ...existing logic to add item to cart...
+
   const userId = req.user._id || req.user.id || 'unknown';
   logAudit('ADD_TO_CART', userId, `Product: ${req.body.productId}, Quantity: ${req.body.quantity}`);
   res.status(200).json({ message: 'Item added to cart' });
 };
-// Example: Audit logging for payment
+
 exports.makePayment = async (req, res) => {
-  // ...existing logic to process payment...
+
   const userId = req.user._id || req.user.id || 'unknown';
   logAudit('PAYMENT', userId, `Amount: ${req.body.amount}, Method: ${req.body.method}`);
   res.status(200).json({ message: 'Payment successful' });
@@ -21,33 +21,6 @@ const logAudit = require('../utils/auditLogger');
 const Session = require('../models/session');
 
 
-// // User Registration
-// exports.registerUser = async (req, res) => {
-//   const { fullName, email, phone, address, password } = req.body;
-
-//   try {
-//     const existing = await User.findOne({ email });
-//     if (existing) return res.status(400).json({ message: 'User already exists' });
-
-//     const hashedPassword = await bcrypt.hash(password, 10);
-//     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-//     const user = new User({
-//       fullName, email, phone, address,
-//       password: hashedPassword,
-//       otp,
-//       role: 'user',
-//       isVerified: false
-//     });
-
-//     await user.save();
-//     await sendOTP(email, otp);
-
-//     res.status(200).json({ message: 'OTP sent', userId: user._id });
-//   } catch (err) {
-//     res.status(500).json({ message: err.message });
-//   }
-// };
 
 
 const { validationResult } = require('express-validator');
@@ -61,7 +34,6 @@ exports.registerUser = async (req, res) => {
 
   const { fullName, email, phone, address, password, lat, lon, captchaToken } = req.body;
 
-  // Verify reCAPTCHA
   if (!captchaToken) {
     return res.status(400).json({ message: 'Captcha token is required' });
   }
@@ -76,7 +48,7 @@ exports.registerUser = async (req, res) => {
     return res.status(500).json({ message: 'Captcha verification error' });
   }
 
-  // ...existing registration logic...
+
 
   try {
     const existing = await User.findOne({ email });
@@ -94,7 +66,7 @@ exports.registerUser = async (req, res) => {
     });
 
     await user.save();
-// Save location if provided
+
     if (lat && lon && address) {
       await Location.create({
         userId: user._id,
@@ -133,7 +105,7 @@ exports.verifyOTP = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-// controllers/userController.js
+
 
 exports.loginUser = async (req, res) => {
   const errors = validationResult(req);
@@ -168,7 +140,7 @@ exports.loginUser = async (req, res) => {
       logAudit('LOGIN_FAILED', user._id, 'Reason: Incorrect password');
       return res.status(400).json({ message: "Incorrect password" });
     }
-    // Reset failed attempts on successful login
+  
     user.failedLoginAttempts = 0;
     user.lockUntil = undefined;
     await user.save();
@@ -243,7 +215,7 @@ exports.getUser = async (req, res) => {
   }
 };
 
-// Get All Users (admin route) - only users with role 'user'
+
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.find({ role: 'user' }).select('fullName email phone address image role isVerified _id');
@@ -258,7 +230,6 @@ exports.getAllUsers = async (req, res) => {
 };
 
 
-// controllers/userController.js
 exports.verifyForgotPasswordOTP = async (req, res) => {
   const { userId, otp } = req.body;
 
@@ -266,7 +237,7 @@ exports.verifyForgotPasswordOTP = async (req, res) => {
     const user = await User.findById(userId);
     if (!user || user.otp !== otp) return res.status(400).json({ message: "Invalid OTP" });
 
-    user.otp = null; // Clear OTP after verification
+    user.otp = null; 
     await user.save();
 
     res.status(200).json({ message: "OTP verified" });
@@ -275,7 +246,6 @@ exports.verifyForgotPasswordOTP = async (req, res) => {
   }
 };
 
-// controllers/userController.js
 exports.sendForgotPasswordOTP = async (req, res) => {
   const { email } = req.body;
 
@@ -294,7 +264,7 @@ exports.sendForgotPasswordOTP = async (req, res) => {
   }
 };
 
-// controllers/userController.js
+
 exports.resetPassword = async (req, res) => {
   const { userId, newPassword } = req.body;
 

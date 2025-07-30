@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-// ⚠️ Do NOT expose this key in frontend
+
 const WIT_SERVER_TOKEN = 'B2CJYEMKR3LXPX45EDIIRPEU664T27CJ';
 
 const handleMessage = async (req, res) => {
@@ -19,13 +19,12 @@ const handleMessage = async (req, res) => {
 
     let reply = '';
 
-    // ✅ Handle built-in traits
     if (traits['wit/greetings']) {
       reply = 'Hello! 👋 Welcome to AnkaAttire. How can I help you today?';
     } else if (traits['wit/bye']) {
       reply = 'Goodbye! 👗 Come back soon!';
     } else {
-      // ✅ Handle custom trained intents
+     
       switch (intent) {
         case 'Hello_Welcome_to_AnkaAttire_How_can_I_assist_you_':
           reply = 'Hello! 👋 Welcome to AnkaAttire. How can I assist you today?';

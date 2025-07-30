@@ -28,25 +28,46 @@ const reduceStock = async (productId, size, quantity) => {
 // 📤 Initiate Payment
 exports.initiateKhaltiPayment = async (req, res) => {
   try {
+    console.log('Payment initiation request body:', req.body);
     const { amount, userId, products } = req.body;
-    const purchase_order_id = `order_${Date.now()}`;
+    
+    // Validation
+    if (!amount || !userId || !products || !Array.isArray(products) || products.length === 0) {
+      console.error('Validation failed:', { amount, userId, products });
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Missing required fields: amount, userId, and products are required' 
+      });
+    }
+    
+    const purchase_order_id = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const purchase_order_name = 'Anka Attire Purchase';
 
+    const PUBLIC_RETURN_URL = process.env.PUBLIC_RETURN_URL || 'https://localhost:5173/payment-success';
+    const PUBLIC_WEBSITE_URL = process.env.PUBLIC_WEBSITE_URL || 'https://localhost:5173';
+    
+    console.log('Khalti request data:', {
+      return_url: PUBLIC_RETURN_URL,
+      website_url: PUBLIC_WEBSITE_URL,
+      amount: amount * 100,
+      purchase_order_id,
+      products: products.length
+    });
     const khaltiRes = await axios.post(
       'https://dev.khalti.com/api/v2/epayment/initiate/',
       {
-        return_url: 'http://localhost:5173/payment-success',
-        website_url: 'http://localhost:5173',
+        return_url: PUBLIC_RETURN_URL,
+        website_url: PUBLIC_WEBSITE_URL,
         amount: amount * 100, // convert to paisa
         purchase_order_id,
         purchase_order_name,
-product_details: products.map(p => ({
-  identity: p.productId,
-  name: p.name,
-  total_price: amount * 100,
-  quantity: p.quantity,
-  unit_price: (amount * 100) / p.quantity,
-}))
+        product_details: products.map(p => ({
+          identity: p.productId,
+          name: p.name || 'Product',
+          total_price: Math.round((amount * 100) / products.length), // Distribute amount among products
+          quantity: p.quantity || 1,
+          unit_price: Math.round((amount * 100) / products.length / (p.quantity || 1)),
+        }))
       },
       {
         headers: {
@@ -56,14 +77,21 @@ product_details: products.map(p => ({
       }
     );
 
+    console.log('Khalti response:', khaltiRes.data);
     const { pidx, payment_url } = khaltiRes.data;
     // Audit log for payment initiation
     const logAudit = require('../utils/auditLogger');
     logAudit('PAYMENT_INITIATED', userId, `Amount: ${amount}, Products: ${JSON.stringify(products)}`);
     return res.status(200).json({ success: true, pidx, payment_url });
   } catch (err) {
-    console.error(err?.response?.data || err.message);
-    return res.status(500).json({ success: false, message: 'Khalti initiation failed' });
+    console.error('Payment initiation error details:');
+    console.error('Error message:', err.message);
+    if (err.response) {
+      console.error('Khalti API response status:', err.response.status);
+      console.error('Khalti API response data:', err.response.data);
+    }
+    console.error('Full error:', err);
+    return res.status(500).json({ success: false, message: 'Khalti initiation failed', error: err.message });
   }
 };
 
