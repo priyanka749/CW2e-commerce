@@ -24,6 +24,7 @@ const SuccessCartToast = () => (
   </div>
 );
 
+
 import SafeHtml from '../components/SafeHtml';
 import { useCsrf } from '../public/CsrfProvider';
 
@@ -48,61 +49,66 @@ const ProductDetail = () => {
   const [isVirtualTryOnOpen, setIsVirtualTryOnOpen] = useState(false);
 
   useEffect(() => {
-    const fetchProduct = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`https://localhost:3000/api/products/${id}`);
-        if (!res.ok) throw new Error('Failed to fetch product');
-        const data = await res.json();
-        setProduct(data);
-        setSelectedImage(`https://localhost:3000/uploads/${data.image}`);
-        setSelectedColor(data.colors?.[0] || '');
-        setSelectedSize(data.sizes?.[0]?.size || '');
-      } catch (err) {
-        setError('Product not found');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const fetchReviews = async () => {
-      try {
-        const res = await fetch(`https://localhost:3000/api/products/${id}`);
-        const data = await res.json();
-        // If reviews are present, ensure userId is always an object with fullName
-        let reviews = data.reviews || data;
-        if (Array.isArray(reviews)) {
-          reviews = reviews.map(r => {
-            if (typeof r.userId === 'string') {
-              // fallback: show as Anonymous
-              return { ...r, userId: { fullName: 'Anonymous', _id: r.userId } };
-            }
-            return r;
-          });
-        }
-        setAllReviews(reviews);
-      } catch {
-        setAllReviews([]);
-        toast.error('Failed to load reviews');
-      }
-    };
-
-    const fetchRelatedProducts = async () => {
-      try {
-        const res = await fetch('https://localhost:3000/api/products');
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setRelatedProducts(data.filter(p => p._id !== id).slice(0, 4));
-        }
-      } catch {
-        console.error('Failed to fetch related products');
-      }
-    };
+  const fetchProduct = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`https://localhost:3000/api/products/${id}`);
+      
+      if (!res.ok) throw new Error('Failed to fetch product');
+      
+      const data = await res.json();
+      
+      setProduct(data);
+      setSelectedImage(`https://localhost:3000/uploads/${data.image}`);
+      setSelectedColor(data.colors?.[0] || '');
+      setSelectedSize(data.sizes?.[0]?.size || '');
+    } catch (err) {
+      console.error('Error fetching product:', err);
+      setError('Product not found');
+    } finally {
+      setLoading(false);
+    }
+  };
 
     fetchProduct();
     fetchReviews();
     fetchRelatedProducts();
   }, [id]);
+
+  const fetchReviews = async () => {
+    try {
+      const res = await fetch(`https://localhost:3000/api/products/${id}`);
+      const data = await res.json();
+      // If reviews are present, ensure userId is always an object with fullName
+      let reviews = data.reviews || data;
+      if (Array.isArray(reviews)) {
+        reviews = reviews.map(r => {
+          if (typeof r.userId === 'string') {
+            // fallback: show as Anonymous
+            return { ...r, userId: { fullName: 'Anonymous', _id: r.userId } };
+          }
+          return r;
+        });
+      }
+      setAllReviews(reviews);
+    } catch {
+      setAllReviews([]);
+      toast.error('Failed to load reviews');
+    }
+  };
+
+  const fetchRelatedProducts = async () => {
+    try {
+      const res = await fetch('https://localhost:3000/api/products');
+      const data = await res.json();
+      
+      if (Array.isArray(data)) {
+        setRelatedProducts(data.filter(p => p._id !== id).slice(0, 4));
+      }
+    } catch (error) {
+      console.error('Failed to fetch related products:', error);
+    }
+  };
 
   const getStockForSize = (size) => {
     const sizeObj = product?.sizes?.find(s => s.size === size);
@@ -221,31 +227,38 @@ const ProductDetail = () => {
     if (!reviewRating || !reviewText.trim()) return toast.warn("Please add a rating and comment");
 
     try {
-      const res = await fetch(`https://localhost:3000/api/reviews/${id}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-            'x-csrf-token': csrfToken,
-          },
-          credentials: 'include',
-          body: JSON.stringify({ rating: reviewRating, comment: reviewText })
-        }
-      );
+      const res = await fetch(`https://localhost:3000/api/reviews/${id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          'x-csrf-token': csrfToken,
+        },
+        credentials: 'include',
+        body: JSON.stringify({ rating: reviewRating, comment: reviewText })
+      });
+
       const isJson = res.headers.get("content-type")?.includes("application/json");
       const data = isJson ? await res.json() : { message: 'Invalid server response' };
-      if (res.ok) {
-        toast.success("Review submitted");
-        // Always refetch reviews after submit to get latest and correct user info
-        fetchReviews();
+      
+      if (res.ok && data.success) {
+        toast.success("Review submitted successfully");
+        // Update reviews with the response data if available
+        if (data.reviews) {
+          setAllReviews(data.reviews);
+        } else {
+          // Fallback: refetch reviews
+          await fetchReviews();
+        }
         setReviewRating(0);
         setReviewText('');
       } else {
+        console.error('Review submission failed:', data);
         toast.error(data.message || 'Failed to submit review');
       }
     } catch (err) {
-      toast.error("Something went wrong");
+      console.error('Review submission error:', err);
+      toast.error("Something went wrong while submitting review");
     }
   };
 
@@ -605,6 +618,9 @@ const ProductDetail = () => {
       </section>
 
       <Footer />
+      
+    
+      
       
       {/* Real-time Virtual Try-On Modal */}
       {product && (
