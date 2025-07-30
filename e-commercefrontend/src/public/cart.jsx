@@ -279,7 +279,16 @@ export default function Cart() {
             color: item.color,
           }))
         },
-        { headers: { Authorization: `Bearer ${token}`, 'X-CSRF-Token': csrfToken } }
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'X-CSRF-Token': csrfToken,
+            'x-csrf-token': csrfToken,
+            'csrf-token': csrfToken,
+            'XSRF-TOKEN': csrfToken,
+          },
+          withCredentials: true
+        }
       );
 
       if (res.data.payment_url) {

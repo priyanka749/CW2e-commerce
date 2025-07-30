@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import {
   FaBoxOpen,
@@ -112,11 +111,22 @@ const Profile = () => {
     setSessionsLoading(true);
     setLogoutAllSuccess('');
     setSessionsError('');
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setSessionsError('No user session found. Please log in again.');
+      setSessionsLoading(false);
+      setTimeout(() => handleUserLogout(navigate), 1200);
+      return;
+    }
     try {
       const res = await fetch(`${BASE_URL}/api/users/logout-all`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${token}`,
+          'X-CSRF-Token': csrfToken,
+          'x-csrf-token': csrfToken,
+          'csrf-token': csrfToken,
+          'XSRF-TOKEN': csrfToken,
         },
         credentials: 'include',
       });
@@ -125,7 +135,13 @@ const Profile = () => {
         setLogoutAllSuccess(data.message || 'Logged out from all devices');
         setSessions([]);
       } else {
-        setSessionsError(data.message || 'Failed to logout from all devices');
+        // If token is missing/expired, force logout
+        if (data.message && data.message.toLowerCase().includes('token')) {
+          setSessionsError('Session expired. Please log in again.');
+          setTimeout(() => handleUserLogout(navigate), 1200);
+        } else {
+          setSessionsError(data.message || 'Failed to logout from all devices');
+        }
       }
     } catch (err) {
       setSessionsError('Failed to logout from all devices');
@@ -251,12 +267,14 @@ const Profile = () => {
     }
 
     try {
+      // Only send the lowercase x-csrf-token header for FormData requests
+      const headers = {
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+      };
+      if (csrfToken) headers['x-csrf-token'] = csrfToken;
       const res = await fetch(`${BASE_URL}/api/users/profile`, {
         method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-          'x-csrf-token': csrfToken,
-        },
+        headers,
         credentials: 'include',
         body: formData,
       });
@@ -307,12 +325,20 @@ const Profile = () => {
       return;
     }
     try {
+      const headers = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+      };
+      
+      // Add CSRF token if available
+      if (csrfToken) {
+        headers['x-csrf-token'] = csrfToken;
+      }
+
       const res = await fetch(`${BASE_URL}/api/users/change-password`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
+        headers,
+        credentials: 'include',
         body: JSON.stringify({ currentPassword, newPassword }),
       });
       const data = await res.json();
