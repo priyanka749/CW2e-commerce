@@ -78,7 +78,7 @@ const routes = createBrowserRouter([
        {path: '/favourite', element: <Favourite /> },
 
       
-       // Assuming this is a favorites page
+       
     ],
   },
   // Private admin routes

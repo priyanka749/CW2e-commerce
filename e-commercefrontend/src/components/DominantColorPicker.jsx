@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from "react";
-import ColorImageSwitcher from '../components/ColorImageSwitcher';
+import { useEffect, useState } from "react";
 
 const product = {
   colors: ['#4B371C', '#8000ff', '#ff0000', '#0000ff'],
