@@ -10,9 +10,9 @@
 
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
 import fs from 'fs';
 import path from 'path';
+import { defineConfig } from 'vite';
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -23,5 +23,6 @@ export default defineConfig({
       cert: fs.readFileSync(path.resolve(__dirname, 'cert/localhost.pem')),
     },
     port: 5173, // original Vite port
+    historyApiFallback: true, // Enable SPA fallback for all routes
   },
 });

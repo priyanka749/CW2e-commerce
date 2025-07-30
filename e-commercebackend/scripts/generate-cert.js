@@ -6,11 +6,11 @@ const certDir = path.join(__dirname, '../cert');
 const keyPath = path.join(certDir, 'localhost-key.pem');
 const certPath = path.join(certDir, 'localhost.pem');
 
-console.log('🔐 Generating SSL certificates for local development...\n');
+console.log(' Generating SSL certificates for local development...\n');
 
 if (!fs.existsSync(certDir)) {
   fs.mkdirSync(certDir, { recursive: true });
-  console.log(`✅ Created directory: ${certDir}`);
+  console.log(` Created directory: ${certDir}`);
 }
 
 
@@ -46,9 +46,9 @@ try {
   fs.writeFileSync(keyPath, pems.private);
   fs.writeFileSync(certPath, pems.cert);
 
-  console.log('\n🎉 SSL certificates generated successfully!');
-  console.log(`🔑 Private key: ${keyPath}`);
-  console.log(`📜 Certificate: ${certPath}`);
+  console.log('\n SSL certificates generated successfully!');
+  console.log(`  Private key: ${keyPath}`);
+  console.log(`  Certificate: ${certPath}`);
   console.log('\nYou can now start the server with HTTPS enabled.');
   console.log('Run: npm run dev:https\n');
 
